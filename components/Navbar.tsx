@@ -31,7 +31,7 @@ export default function Navbar({ user }: NavbarProps) {
         </span>
       </div>
 
-      <div className="shrink-0 flex items-center space-x-5">
+      <div className="shrink-0 flex items-center space-x-6">
         {/* Theme toggle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
