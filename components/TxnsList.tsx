@@ -1,6 +1,6 @@
 "use client";
 
-import { Transaction } from "@/app/actions/transaction";
+import { Transaction } from "@/lib/types";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { MoveDownLeft, MoveUpRight } from "lucide-react";
 import Image from "next/image";

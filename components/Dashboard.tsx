@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import Navbar from "./Navbar";
 import { useEffect, useRef, useState } from "react";
-import { getProfile, handleSocialAuth, User } from "@/app/actions/profile";
+import { getProfile, handleSocialAuth } from "@/app/actions/profile";
 import { useClientMounted } from "@/hooks/useClientMount";
 import {
   ArrowLeftRight,
@@ -16,11 +16,12 @@ import {
 import { Button } from "./ui/button";
 import { formatAmount } from "@/lib/utils";
 import TxnsList from "./TxnsList";
-import { getTransactions, Transaction } from "@/app/actions/transaction";
+import { getTransactions } from "@/app/actions/transaction";
 import WagerList from "./WagersList";
-import { getWagers, Wager } from "@/app/actions/wager";
+import { getWagers } from "@/app/actions/wager";
 import FundsTransfer from "./FundsTransfer";
 import WagerSearch from "./WagerSearch";
+import { Wager, Transaction, User } from "@/lib/types";
 
 export default function Dashboard() {
   const mounted = useClientMounted();

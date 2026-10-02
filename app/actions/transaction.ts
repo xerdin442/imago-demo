@@ -1,17 +1,8 @@
 "use server"
 
+import { Transaction } from "@/lib/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-export interface Transaction {
-  id: number;
-  amount: number;
-  txIdentifier?: string;
-  status: "SUCCESS" | "FAILED" | "PENDING";
-  type: "DEPOSIT" | "WITHDRAWAL";
-  chain: string;
-  createdAt: string;
-}
 
 export async function getTransactions(): Promise<Transaction[]> {
   const cookieStore = await cookies();

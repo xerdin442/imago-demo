@@ -10,8 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { User } from "@/app/actions/profile";
 import { usePathname } from "next/navigation";
+import { User } from "@/lib/types";
 
 interface NavbarProps {
   user?: User;

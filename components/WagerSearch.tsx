@@ -1,12 +1,12 @@
 "use client";
 
-import { PopupProps } from "@/lib/utils";
+import { PopupProps, Wager } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useState } from "react";
-import { exploreWagers, Wager } from "@/app/actions/wager";
+import { exploreWagers } from "@/app/actions/wager";
 
 export default function WagerSearch({ open, onOpenChange }: PopupProps) {
   const [inviteCode, setInviteCode] = useState("");

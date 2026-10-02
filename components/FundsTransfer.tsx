@@ -7,7 +7,7 @@ import { processFundsTransfer } from "@/app/actions/transfer";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { PopupProps } from "@/lib/utils";
+import { PopupProps } from "@/lib/types";
 
 export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
   const [isVisible, setIsVisible] = useState(false);

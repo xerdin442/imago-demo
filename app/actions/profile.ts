@@ -1,16 +1,8 @@
 "use server"
 
+import { User } from "@/lib/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-export interface User {
-  id: number
-  balance: number
-  username: string
-  profileImage: string
-  firstName: string
-  lastName: string
-}
 
 export async function getProfile(id?: number): Promise<User> {
   const cookieStore = await cookies();

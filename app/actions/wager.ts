@@ -3,18 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache"
-
-export interface Wager {
-  id: number;
-  title: string;
-  category: string;
-  amount: number;
-  status: "PENDING" | "ACTIVE" | "DISPUTE" | "SETTLED";
-  playerOne: number;
-  playerTwo?: number;
-  winner: number | null;
-  inviteCode: string;
-}
+import { Wager } from "@/lib/types";
 
 export async function getWagers(): Promise<Wager[]> {
   const cookieStore = await cookies();

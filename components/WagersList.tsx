@@ -3,11 +3,12 @@
 import { Check, Copy } from "lucide-react";
 import { cn, formatAmount, formatUsername } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { getProfile, User } from "@/app/actions/profile";
-import { handleWagerClaim, Wager } from "@/app/actions/wager";
+import { getProfile } from "@/app/actions/profile";
+import { handleWagerClaim } from "@/app/actions/wager";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Wager, User } from "@/lib/types";
 
 interface WagerListProps {
   wagers: Wager[];
@@ -170,7 +171,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
     try {
       setWagerClaim(true);
       await handleWagerClaim(wager.id, action);
-      
+
       router.refresh();
     } catch (error) {
       console.error(error);
