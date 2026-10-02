@@ -18,6 +18,7 @@ import { Network } from "@/lib/types";
 interface NetworkSelectProps {
   namespace?: ChainNamespace;
   disabled: boolean;
+  selectedNetwork?: Network;
 }
 
 const networks: Network[] = ["BASE", "SOLANA"];
@@ -25,6 +26,7 @@ const networks: Network[] = ["BASE", "SOLANA"];
 export default function NetworkSelect({
   namespace,
   disabled,
+  selectedNetwork,
 }: NetworkSelectProps) {
   const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
@@ -42,8 +44,9 @@ export default function NetworkSelect({
     <Select
       disabled={disabled}
       name="network"
+      defaultValue={selectedNetwork}
       required
-      onValueChange={disconnectWallet}
+      {...(namespace && { onValueChange: disconnectWallet })}
     >
       <SelectTrigger className="w-full dark:text-gray-800">
         <SelectValue placeholder="Select network" />
@@ -62,7 +65,8 @@ export default function NetworkSelect({
                   alt={`${network} Logo`}
                   width={24}
                   height={24}
-                  className="w-6 h-6 rounded-full border-2 border-black"
+                  unoptimized
+                  className="w-6 h-6 rounded-full border-2 border-black bg-white"
                 />
                 <span className="font-medium text-[17px]">{network}</span>
               </div>

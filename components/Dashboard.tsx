@@ -149,7 +149,7 @@ export default function Dashboard() {
 
               <div className="flex items-center justify-center space-x-4">
                 {/* Create Wager Btn */}
-                <Button className="py-5.5">
+                <Button onClick={() => {}} className="py-5.5">
                   <PlusIcon
                     size={30}
                     strokeWidth={2.5}
@@ -232,6 +232,7 @@ export default function Dashboard() {
         open={isWithdrawOpen}
         onOpenChange={setIsWithdrawOpen}
         onSuccess={fetchData}
+        availableBalance={user?.balance as number}
       />
 
       <WagerSearch

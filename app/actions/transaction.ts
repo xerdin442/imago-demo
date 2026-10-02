@@ -1,6 +1,7 @@
 "use server"
 
 import { TransactionInfo, Transaction } from "@/lib/types";
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -36,7 +37,7 @@ export async function getTransactions(): Promise<Transaction[]> {
   }
 }
 
-export async function processTransaction(data: TransactionInfo, action: "deposit" | "withdraw") {
+export async function processTransaction(info: TransactionInfo, action: "deposit" | "withdraw") {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -50,13 +51,20 @@ export async function processTransaction(data: TransactionInfo, action: "deposit
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "Idempotency-Key": action === "withdraw" ? randomUUID() : "",
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(info)
     });
+
+    const data = await response.json();
 
     if (response.status === 401) {
       cookieStore.delete("token");
       redirect("/");
+    }
+
+    if (response.status === 400) {
+      return { error: data.message }
     }
 
     revalidatePath("/home");
