@@ -244,9 +244,8 @@ function ConfirmWithdraw({
               <Image
                 src={`/${data.chain?.toLowerCase()}-logo.png`}
                 alt="Network Logo"
-                width={24}
-                height={24}
-                unoptimized
+                width={data.chain === "SOLANA" ? 316 : 500}
+                height={data.chain === "SOLANA" ? 316 : 500}
                 className="w-6 h-6 rounded-full bg-white"
               />
               <span className="font-semibold">{data.chain}</span>

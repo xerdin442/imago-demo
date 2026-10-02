@@ -150,7 +150,6 @@ export default function WagerSearch({
                   alt="Wager Creator"
                   width={38}
                   height={38}
-                  unoptimized
                   className="rounded-full shrink-0 border-2 border-black"
                 />
 

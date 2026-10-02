@@ -63,9 +63,8 @@ export default function NetworkSelect({
                 <Image
                   src={`/${network.toLowerCase()}-logo.png`}
                   alt={`${network} Logo`}
-                  width={24}
-                  height={24}
-                  unoptimized
+                  width={network === "SOLANA" ? 316 : 500}
+                  height={network === "SOLANA" ? 316 : 500}
                   className="w-6 h-6 rounded-full border-2 border-black bg-white"
                 />
                 <span className="font-medium text-[17px]">{network}</span>

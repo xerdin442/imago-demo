@@ -15,7 +15,9 @@ export default function TxnsList({ txns }: TxnsListProps) {
       {txns.map((tx) => {
         const isDeposit = tx.type === "DEPOSIT";
 
-        const amountColor = isDeposit ? "text-green-500" : "text-destructive dark:text-pink-800";
+        const amountColor = isDeposit
+          ? "text-green-500"
+          : "text-destructive dark:text-pink-800";
         const iconBgColor = isDeposit ? "bg-green-200" : "bg-red-200";
         const iconColor = isDeposit ? "text-green-700" : "text-red-700";
         const statusColor =
@@ -54,9 +56,8 @@ export default function TxnsList({ txns }: TxnsListProps) {
                 <Image
                   src={chainLogoSrc}
                   alt={`${tx.chain} Logo`}
-                  width={20}
-                  height={20}
-                  unoptimized
+                  width={tx.chain === "SOLANA" ? 316 : 500}
+                  height={tx.chain === "SOLANA" ? 316 : 500}
                   className="absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full border-2 border-black bg-white"
                 />
               </div>

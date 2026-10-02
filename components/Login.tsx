@@ -117,7 +117,6 @@ export default function LoginForm() {
                 alt="Google"
                 width={20}
                 height={20}
-                unoptimized
                 className="w-5 h-5 mr-4"
               />
             )}

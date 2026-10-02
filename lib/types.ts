@@ -19,7 +19,7 @@ export interface Transaction {
   txIdentifier?: string;
   status: "SUCCESS" | "FAILED" | "PENDING";
   type: "DEPOSIT" | "WITHDRAWAL";
-  chain: string;
+  chain: Network;
   createdAt: string;
 }
 
