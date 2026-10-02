@@ -113,6 +113,7 @@ export default function CreateWager({
               placeholder="Enter stake amount"
               min={1}
               required
+              step={0.01}
             />
           </div>
 

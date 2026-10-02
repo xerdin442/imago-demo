@@ -253,7 +253,7 @@ export default function Dashboard() {
         onSuccess={fetchData}
       />
 
-      <ToastContainer autoClose={2500} theme={resolvedTheme} />
+      <ToastContainer autoClose={3000} theme={resolvedTheme} />
     </>
   );
 }

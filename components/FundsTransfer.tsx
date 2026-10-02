@@ -74,6 +74,7 @@ export default function FundsTransfer({
             </Label>
             <Input
               type="text"
+              id="username"
               name="username"
               required
               placeholder="Enter recipient username"
@@ -87,10 +88,12 @@ export default function FundsTransfer({
             </Label>
             <Input
               type="number"
+              id="amount"
               name="amount"
               placeholder="Enter amount"
               required
               min={0}
+              step={0.01}
             />
           </div>
 

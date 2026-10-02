@@ -94,6 +94,7 @@ export default function Withdraw({
               </Label>
               <Input
                 type="text"
+                id="recipient"
                 name="recipient"
                 defaultValue={withdrawalInfo.address}
                 placeholder="Enter wallet address or domain name"
@@ -117,10 +118,12 @@ export default function Withdraw({
               </Label>
               <Input
                 type="number"
+                id="amount"
                 name="amount"
                 placeholder="Enter amount"
                 defaultValue={withdrawalInfo.amount}
                 min={1}
+                step={0.01}
                 required
               />
             </div>

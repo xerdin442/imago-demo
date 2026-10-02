@@ -326,12 +326,14 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
               Amount
             </Label>
             <Input
+              id="amount"
               type="number"
               name="amount"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
               placeholder="Enter amount"
               min={1}
+              step={0.01}
             />
           </div>
 
