@@ -11,14 +11,15 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { User } from "@/app/actions/profile";
+import { usePathname } from "next/navigation";
 
 interface NavbarProps {
-  homePage: boolean
   user?: User;
 }
 
-export default function Navbar({ homePage, user }: NavbarProps) {
+export default function Navbar({ user }: NavbarProps) {
   const { setTheme } = useTheme();
+  const pathname = usePathname();
 
   return (
     <nav className="bg-primary flex items-center justify-between px-6 py-2 lg:px-8 w-full border-b-4 border-t-[1.5px] mb-4">
@@ -54,7 +55,7 @@ export default function Navbar({ homePage, user }: NavbarProps) {
         </DropdownMenu>
 
         {/* User image */}
-        {homePage && user && (
+        {pathname === '/home' && user && (
           <Avatar>
             <AvatarImage
               src={user.profileImage}

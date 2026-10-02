@@ -25,7 +25,7 @@ export default function LoginForm() {
 
   return (
     <>
-      <Navbar homePage={false} />
+      <Navbar />
 
       <section className="flex items-center justify-center font-sans">
         <div className="w-full max-w-md mx-auto p-8 sm:p-10 z-10">
