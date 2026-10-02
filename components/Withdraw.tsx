@@ -128,7 +128,7 @@ export default function Withdraw({
             {/* Available Balance */}
             <div className="rounded-base md:text-lg shadow-neo border-2 border-black p-4 flex justify-between items-center">
               <p className="font-semibold">Available Balance</p>
-              <p className="font-bold font-display tracking-wider text-primary">
+              <p className="font-bold font-display tracking-wider text-primary text-lg md:text-xl">
                 {formatAmount(availableBalance) || "$0.00"}
               </p>
             </div>
