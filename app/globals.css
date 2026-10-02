@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Clash Display";
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/ClashDisplay-Medium.woff2") format("woff2");
+}
+
 :root {
   --background: oklch(94.11% 0.036556 308.0303);
   --secondary-background: oklch(100% 0 0);
@@ -13,11 +20,11 @@
   --ring: oklch(0% 0 0);
   --overlay: oklch(0% 0 0 / 0.8);
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #CA7AFF;
-  --chart-2: #FACC00;
-  --chart-3: #00D696;
-  --chart-4: #FF7A05;
-  --chart-5: #0099FF;
+  --chart-1: #ca7aff;
+  --chart-2: #facc00;
+  --chart-3: #00d696;
+  --chart-4: #ff7a05;
+  --chart-5: #0099ff;
   --chart-active-dot: #000;
 }
 
@@ -30,15 +37,18 @@
   --border: oklch(0% 0 0);
   --ring: oklch(100% 0 0);
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #D494FF;
-  --chart-2: #E0B700;
-  --chart-3: #00BD84;
-  --chart-4: #EB6D00;
-  --chart-5: #008AE5;
+  --chart-1: #d494ff;
+  --chart-2: #e0b700;
+  --chart-3: #00bd84;
+  --chart-4: #eb6d00;
+  --chart-5: #008ae5;
   --chart-active-dot: #fff;
 }
 
 @theme inline {
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-fira-mono);
+  --font-display: Clash Display, sans-serif;
   --color-main: var(--main);
   --color-background: var(--background);
   --color-secondary-background: var(--secondary-background);
@@ -62,13 +72,33 @@
   --font-weight-base: 500;
   --font-weight-heading: 700;
 }
-  
+
 @layer base {
   body {
     @apply text-foreground font-base bg-background;
   }
 
-  h1, h2, h3, h4, h5, h6{
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading;
   }
+}
+
+.or-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.or-separator::before,
+.or-separator::after {
+  content: "";
+  flex-grow: 1;
+  height: 0.75px;
+  background-color: #c6c9cd;
 }
