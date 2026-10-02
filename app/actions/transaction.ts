@@ -1,6 +1,6 @@
 "use server"
 
-import { Transaction } from "@/lib/types";
+import { DepositInfo, Transaction } from "@/lib/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -33,4 +33,8 @@ export async function getTransactions(): Promise<Transaction[]> {
     console.error("Transactions fetch error:", error);
     redirect("/");
   }
+}
+
+export async function processDeposit(data: DepositInfo) {
+  return { error: '' }
 }

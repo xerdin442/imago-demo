@@ -22,6 +22,7 @@ import { getWagers } from "@/app/actions/wager";
 import FundsTransfer from "./FundsTransfer";
 import WagerSearch from "./WagerSearch";
 import { Wager, Transaction, User } from "@/lib/types";
+import Deposit from "./Deposit";
 
 export default function Dashboard() {
   const mounted = useClientMounted();
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [wagers, setWagers] = useState<Wager[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWagerSearchOpen, setIsWagerSearchOpen] = useState(false);
 
   const hasFetched = useRef(false);
@@ -93,7 +95,10 @@ export default function Dashboard() {
             <div className="mt-4 flex items-center justify-center space-x-10 lg:space-x-12">
               {/* Deposit Btn */}
               <div className="flex flex-col items-center justify-center space-y-1.5">
-                <Button className="w-12.5 h-12">
+                <Button
+                  onClick={() => setIsDepositOpen(true)}
+                  className="w-12.5 h-12"
+                >
                   <MoveDownLeft strokeWidth={2.5} className="size-6.5" />
                 </Button>
 
@@ -195,6 +200,8 @@ export default function Dashboard() {
       </section>
 
       <FundsTransfer open={isTransferOpen} onOpenChange={setIsTransferOpen} />
+
+      <Deposit open={isDepositOpen} onOpenChange={setIsDepositOpen} />
 
       <WagerSearch
         open={isWagerSearchOpen}

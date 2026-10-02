@@ -33,3 +33,12 @@ export interface Wager {
   winner: number | null;
   inviteCode: string;
 }
+
+export type Network = "BASE" | "SOLANA"
+
+export interface DepositInfo {
+  chain: Network;
+  amount: number;
+  depositor: string;
+  txIdentifier?: string;
+}

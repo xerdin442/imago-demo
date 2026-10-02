@@ -51,7 +51,6 @@ export default function LoginForm() {
               </Label>
               <Input
                 type="email"
-                id="email"
                 name="email"
                 required
                 placeholder="Enter your email"
@@ -69,7 +68,6 @@ export default function LoginForm() {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  id="password"
                   name="password"
                   required
                   placeholder="Enter your password"
