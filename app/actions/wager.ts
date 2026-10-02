@@ -1,3 +1,8 @@
+"use server"
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 export interface Wager {
   id: number;
   title: string;
@@ -8,4 +13,35 @@ export interface Wager {
   playerTwo?: number;
   winner: number | null;
   inviteCode: string;
+}
+
+export async function getWagers(): Promise<Wager[]> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    redirect("/");
+  }
+
+  try {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/user/wagers`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      cookieStore.delete("token");
+      redirect("/");
+    }
+
+    return data.wagers as Wager[]
+  } catch (error) {
+    console.error("Wagers fetch error:", error);
+    redirect("/");
+  }
 }

@@ -18,71 +18,15 @@ import { formatAmount } from "@/lib/utils";
 import TxnsList from "./TxnsList";
 import { getTransactions, Transaction } from "@/app/actions/transaction";
 import WagerList from "./WagersList";
-import { Wager } from "@/app/actions/wager";
-
-const mockWagers: Wager[] = [
-  {
-    id: 1,
-    title: "1v1 Rust Sniper Only",
-    category: "GAMING",
-    amount: 50.0,
-    status: "PENDING",
-    playerOne: 1,
-    winner: null,
-    inviteCode: "RUST-772",
-  },
-  {
-    id: 2,
-    title: "Chess Blitz 3min",
-    category: "STRATEGY",
-    amount: 15.0,
-    status: "ACTIVE",
-    playerOne: 2,
-    playerTwo: 1,
-    winner: null,
-    inviteCode: "CHESS-99",
-  },
-  {
-    id: 3,
-    title: "UFC 298: Volkanovski vs Topuria",
-    category: "SPORTS",
-    amount: 100.0,
-    status: "ACTIVE",
-    playerOne: 1,
-    playerTwo: 2,
-    winner: 1,
-    inviteCode: "UFC-298",
-  },
-  {
-    id: 4,
-    title: "FIFA 24 Finals",
-    category: "GAMING",
-    amount: 25.0,
-    status: "DISPUTE",
-    playerOne: 2,
-    playerTwo: 1,
-    winner: 2,
-    inviteCode: "FIFA-01",
-  },
-  {
-    id: 5,
-    title: "NBA Finals - Game 7",
-    category: "SPORTS",
-    amount: 250.0,
-    status: "SETTLED",
-    playerOne: 1,
-    playerTwo: 2,
-    winner: 1,
-    inviteCode: "NBA-SETTLED",
-  },
-];
+import { getWagers, Wager } from "@/app/actions/wager";
 
 export default function Dashboard() {
   const mounted = useClientMounted();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User>();
   const [txns, setTxns] = useState<Transaction[]>([]);
-  const [txLoading, setTxLoading] = useState(true);
+  const [wagers, setWagers] = useState<Wager[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const hasFetched = useRef(false);
 
@@ -108,14 +52,17 @@ export default function Dashboard() {
         }
         setUser(userData);
 
-        // Fetch Transactions
-        setTxLoading(true);
+        // Fetch user's wagers and transactions
+        setDataLoading(true);
         const txData = await getTransactions();
+        const wagerData = await getWagers();
+
         setTxns(txData);
+        setWagers(wagerData);
       } catch (error) {
         console.error("Dashboard initialization failed", error);
       } finally {
-        setTxLoading(false);
+        setDataLoading(false);
       }
     };
 
@@ -194,7 +141,21 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {user ? <WagerList wagers={mockWagers} currentUserId={user.id} /> : <></>}
+            {dataLoading || !user ? (
+              <div className="w-full flex items-center justify-center pt-3">
+                <Loader2
+                  size={32}
+                  strokeWidth={2.5}
+                  className="animate-spin text-gray-500"
+                />
+              </div>
+            ) : wagers.length < 1 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 font-semibold md:text-lg pt-2">
+                No wagers yet...
+              </p>
+            ) : (
+              <WagerList wagers={[]} currentUserId={user.id} />
+            )}
           </div>
         </div>
 
@@ -202,7 +163,7 @@ export default function Dashboard() {
         <div className="md:w-1/2 px-4 grow mt-6 md:mt-0">
           <h3 className="text-3xl font-extrabold mb-3">Transactions</h3>
 
-          {txLoading ? (
+          {dataLoading ? (
             <div className="w-full flex items-center justify-center pt-3">
               <Loader2
                 size={32}
