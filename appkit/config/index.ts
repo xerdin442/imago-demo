@@ -16,8 +16,9 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   networks: baseNetworks,
   transports: {
-    [baseSepolia.id]: http("https://sepolia.base.org"),
-    [base.id]: http("https://mainnet.base.org")
+    [isDev ? baseSepolia.id : base.id]: http(
+      isDev ? "https://sepolia.base.org" : "https://mainnet.base.org"
+    ),
   }
 })
 
