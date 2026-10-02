@@ -40,8 +40,8 @@ export interface Wager {
 export type Network = "BASE" | "SOLANA"
 
 export interface TransactionInfo {
-  chain: Network;
-  amount: number;
+  chain?: Network;
+  amount?: number;
   depositor?: string;
   address?: string;
   txIdentifier?: string;

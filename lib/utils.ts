@@ -28,7 +28,7 @@ export const formatUsername = (name: string) => {
 };
 
 export const getUsdcAddress = (caipAddress: string): string => {
-  const chainId = caipAddress.slice(0, 2);
+  const chainId = caipAddress.split(":").slice(0, 2).join(":");
 
   switch (chainId) {
     case "eip155:8453":
@@ -37,8 +37,12 @@ export const getUsdcAddress = (caipAddress: string): string => {
       return "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
     case "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp":
       return "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-    default:
+    case "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z":
+    case "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1":
       return "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+    default:
+      console.error(`No USDC address mapped for chain: ${chainId}`);
+      return "";
   }
 };
 

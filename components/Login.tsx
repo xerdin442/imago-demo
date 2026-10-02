@@ -46,7 +46,7 @@ export default function LoginForm() {
           <form action={formAction} className="space-y-4">
             {/* Email input */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-base ml-0.5 font-semibold">
+              <Label htmlFor="email" className="text-lg ml-0.5 font-semibold">
                 Email
               </Label>
               <Input
@@ -61,7 +61,7 @@ export default function LoginForm() {
             <div className="space-y-1.5 relative">
               <Label
                 htmlFor="password"
-                className="text-base ml-0.5 font-semibold"
+                className="text-lg ml-0.5 font-semibold"
               >
                 Password
               </Label>

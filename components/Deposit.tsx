@@ -21,7 +21,7 @@ import {
   waitForTransactionReceipt,
 } from "@wagmi/core";
 import { parseUnits } from "viem";
-import { ERC20_ABI, getUsdcAddress } from "@/lib/utils";
+import { ERC20_ABI, formatAmount, getUsdcAddress } from "@/lib/utils";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
@@ -92,7 +92,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
 
     setTxStatus("processing");
 
-    if (!depositAmount || Number(depositAmount) <= 0) {
+    if (!depositAmount || Number(depositAmount.trim()) <= 0) {
       setErrorMsg("Please enter a valid amount");
       setTxStatus("idle");
       setIsPending(false);
@@ -174,6 +174,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
         setIsPending(false);
 
         console.error(error);
+        return;
       }
     } else {
       const rpcUrl =
@@ -262,6 +263,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
         setIsPending(false);
 
         console.error(error);
+        return;
       }
     }
 
@@ -272,12 +274,17 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
     onOpenChange(false);
 
     // Notify user
-    toast.success(`Your deposit of ${depositAmount} is being processed.`);
+    toast.success(
+      `Your deposit of ${formatAmount(
+        parseFloat(depositAmount)
+      )} is being processed.`
+    );
 
     // Reset popup state
     setErrorMsg(null);
-    setTxStatus("idle");
     setIsPending(false);
+    setTxStatus("idle");
+    setDepositAmount("");
 
     return;
   };
@@ -310,7 +317,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
           {/* Network select */}
           <div className="space-y-1.5">
             <Label className="text-lg ml-0.5 font-semibold">Network</Label>
-            <NetworkSelect namespace={chainNamespace} />
+            <NetworkSelect disabled={isPending} namespace={chainNamespace} />
           </div>
 
           {/* Amount input */}

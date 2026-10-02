@@ -46,14 +46,14 @@ export default function WagerSearch({
         setSearchResult(result);
         setWagerCreator(creator);
       }
-
-      return;
     } catch (err) {
       console.error(err);
       setErrorMsg("Something went wrong. Please try again.");
     } finally {
       setIsSearchLoading(false);
     }
+
+    return;
   };
 
   const processJoinWager = async (wagerId: number) => {

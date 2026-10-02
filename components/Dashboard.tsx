@@ -25,6 +25,7 @@ import { Wager, Transaction, User } from "@/lib/types";
 import Deposit from "./Deposit";
 import { ToastContainer } from "react-toastify";
 import { useTheme } from "next-themes";
+import Withdraw from "./Withdraw";
 
 export default function Dashboard() {
   const { resolvedTheme } = useTheme();
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [dataLoading, setDataLoading] = useState(true);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isWagerSearchOpen, setIsWagerSearchOpen] = useState(false);
 
   const hasFetched = useRef(false);
@@ -55,7 +57,6 @@ export default function Dashboard() {
       setUser(userData);
 
       // Fetch user's wagers and transactions
-      setDataLoading(true);
       const txData = await getTransactions();
       const wagerData = await getWagers();
 
@@ -63,8 +64,6 @@ export default function Dashboard() {
       setWagers(wagerData);
     } catch (error) {
       console.error("Dashboard initialization failed", error);
-    } finally {
-      setDataLoading(false);
     }
   };
 
@@ -73,7 +72,15 @@ export default function Dashboard() {
 
     const initializeDashboard = async () => {
       hasFetched.current = true;
-      await fetchData();
+
+      try {
+        setDataLoading(true);
+        await fetchData();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setDataLoading(false);
+      }
     };
 
     initializeDashboard();
@@ -110,7 +117,10 @@ export default function Dashboard() {
 
               {/* Withdraw Btn */}
               <div className="flex flex-col items-center justify-center space-y-1.5">
-                <Button className="w-12.5 h-12">
+                <Button
+                  onClick={() => setIsWithdrawOpen(true)}
+                  className="w-12.5 h-12"
+                >
                   <MoveUpRight strokeWidth={2.5} className="size-6.5" />
                 </Button>
 
@@ -215,6 +225,12 @@ export default function Dashboard() {
       <Deposit
         open={isDepositOpen}
         onOpenChange={setIsDepositOpen}
+        onSuccess={fetchData}
+      />
+
+      <Withdraw
+        open={isWithdrawOpen}
+        onOpenChange={setIsWithdrawOpen}
         onSuccess={fetchData}
       />
 
