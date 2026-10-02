@@ -19,7 +19,8 @@ import TxnsList from "./TxnsList";
 import { getTransactions, Transaction } from "@/app/actions/transaction";
 import WagerList from "./WagersList";
 import { getWagers, Wager } from "@/app/actions/wager";
-import TransferPopup from "./TransferPopup";
+import FundsTransfer from "./FundsTransfer";
+import WagerSearch from "./WagerSearch";
 
 export default function Dashboard() {
   const mounted = useClientMounted();
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [wagers, setWagers] = useState<Wager[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isWagerSearchOpen, setIsWagerSearchOpen] = useState(false);
 
   const hasFetched = useRef(false);
 
@@ -141,7 +143,10 @@ export default function Dashboard() {
                 </Button>
 
                 {/* Search Icon */}
-                <Button className="w-12.5 h-11.5">
+                <Button
+                  onClick={() => setIsWagerSearchOpen(true)}
+                  className="w-12.5 h-11.5"
+                >
                   <Search strokeWidth={2.5} className="size-6"></Search>
                 </Button>
               </div>
@@ -188,7 +193,12 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <TransferPopup open={isTransferOpen} onOpenChange={setIsTransferOpen} />
+      <FundsTransfer open={isTransferOpen} onOpenChange={setIsTransferOpen} />
+
+      <WagerSearch
+        open={isWagerSearchOpen}
+        onOpenChange={setIsWagerSearchOpen}
+      />
     </>
   );
 }

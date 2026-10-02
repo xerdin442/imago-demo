@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -38,6 +39,8 @@ export async function processFundsTransfer(prevState: unknown, formData: FormDat
 
       return { error: errorMsg };
     }
+
+    revalidatePath("/home")
 
     return { message: data.message }
   } catch (error) {

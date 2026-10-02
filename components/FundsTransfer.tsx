@@ -1,27 +1,15 @@
 "use client";
 
 import { X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { useActionState, useEffect, useState } from "react";
 import { processFundsTransfer } from "@/app/actions/transfer";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
+import { PopupProps } from "@/lib/utils";
 
-interface TransferPopupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export default function TransferPopup({
-  open,
-  onOpenChange,
-}: TransferPopupProps) {
+export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [state, formAction, isPending] = useActionState(
     processFundsTransfer,
@@ -59,10 +47,7 @@ export default function TransferPopup({
         <form action={formAction} className="space-y-5">
           {/* Username input */}
           <div className="space-y-1.5">
-            <Label
-              htmlFor="username"
-              className="text-lg ml-0.5 font-semibold"
-            >
+            <Label htmlFor="username" className="text-lg ml-0.5 font-semibold">
               Username
             </Label>
             <Input

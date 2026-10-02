@@ -26,3 +26,8 @@ export const formatDate = (date: Date) => {
 export const formatUsername = (name: string) => {
   return name.length > 10 ? `@${name.slice(0, 8)}...` : `@${name}`;
 };
+
+export interface PopupProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
