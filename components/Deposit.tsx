@@ -30,6 +30,13 @@ import Image from "next/image";
 import { ChainNamespace } from "@reown/appkit/networks";
 import { Eip1193Provider, ethers } from "ethers";
 import { ERC20_ABI, getUsdcAddress } from "@/lib/utils";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import type { Provider as SolanaProvider } from "@reown/appkit-adapter-solana";
 
 export default function Deposit({ open, onOpenChange }: PopupProps) {
   const [depositAmount, setDepositAmount] = useState("");
@@ -129,36 +136,117 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
 
       // Initiate transfer of deposit amount from user wallet
       setButtonText("Sending...");
-      const recipientAddress = process.env
-        .NEXT_PUBLIC_BASE_PLATFORM_WALLET_ADDRESS as string;
-      const tx = await usdcContract.transfer(recipientAddress, transferAmount);
+      const platformAddress =
+        process.env.NEXT_PUBLIC_BASE_PLATFORM_WALLET_ADDRESS!;
+      const tx = await usdcContract.transfer(platformAddress, transferAmount);
 
-      // Wait for transaction confirmation
-      setButtonText("Confirming...");
+      // Wait for confirmation of transaction
       const receipt = await tx.wait();
 
       if (receipt.status === 1) {
         // Process deposit info
+        setButtonText("Confirming...");
         await processDeposit({ ...depositInfo, txIdentifier: tx.hash });
-        // Refresh background data
-        router.refresh();
-        // Close dialog box
-        onOpenChange(false);
-        // Disconnect wallet
-        await disconnectWallet();
-        // Notify user
-        toast.success(`Your deposit of ${depositAmount} is being processed.`);
       } else {
         toast.error("Deposit transaction failed!");
       }
+    } else {
+      const rpcUrl =
+        process.env.NODE_ENV === "development"
+          ? "https://api.devnet.solana.com"
+          : "https://api.mainnet-beta.solana.com";
 
-      // Reset popup state
-      setErrorMsg(null);
-      setButtonText("Connect Wallet");
-      setIsPending(false);
+      // Initialize connection to network
+      const connection = new Connection(rpcUrl, "confirmed");
+      const provider = walletProvider as SolanaProvider;
+      const senderPublicKey = new PublicKey(address as string);
+      const platformPublicKey = new PublicKey(
+        process.env.NEXT_PUBLIC_SOLANA_PLATFORM_WALLET_ADDRESS!
+      );
+      const usdcMintAddress = new PublicKey(usdcAddress);
 
-      return;
+      // Get Associated Token Accounts for the depositor and platform addresses
+      const senderATA = await getAssociatedTokenAddress(
+        usdcMintAddress,
+        senderPublicKey
+      );
+      const platformATA = await getAssociatedTokenAddress(
+        usdcMintAddress,
+        platformPublicKey
+      );
+
+      // Verify that the user has sufficient balance
+      const balance = await connection.getTokenAccountBalance(senderATA);
+      if (balance.value.uiAmount! < Number(depositAmount)) {
+        setErrorMsg("Insufficient USDC balance");
+        setButtonText("Complete Deposit");
+        setIsPending(false);
+
+        return;
+      }
+
+      // Create transaction and configure transfer instruction
+      const transaction = new Transaction().add(
+        createTransferInstruction(
+          senderATA,
+          platformATA,
+          senderPublicKey,
+          Number(depositAmount) * Math.pow(10, balance.value.decimals),
+          [],
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      // Retrieve latest blockhash from the network
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = senderPublicKey;
+
+      // Initiate transfer of deposit amount from user wallet
+      setButtonText("Sending...");
+      const signedTxn = await provider.signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(
+        signedTxn.serialize()
+      );
+
+      // Wait for confirmation of transaction
+      const confirmation = await connection.confirmTransaction(
+        {
+          signature,
+          blockhash,
+          lastValidBlockHeight,
+        },
+        "confirmed"
+      );
+
+      if (!confirmation.value.err) {
+        // Process deposit info
+        setButtonText("Confirming...");
+        await processDeposit({ ...depositInfo, txIdentifier: signature });
+      } else {
+        toast.error("Deposit transaction failed!");
+      }
     }
+
+    // Refresh background data
+    router.refresh();
+
+    // Close dialog box
+    onOpenChange(false);
+
+    // Disconnect wallet
+    await disconnectWallet();
+
+    // Notify user
+    toast.success(`Your deposit of ${depositAmount} is being processed.`);
+
+    // Reset popup state
+    setErrorMsg(null);
+    setButtonText("Connect Wallet");
+    setIsPending(false);
+
+    return;
   };
 
   return (
