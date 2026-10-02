@@ -19,6 +19,7 @@ import TxnsList from "./TxnsList";
 import { getTransactions, Transaction } from "@/app/actions/transaction";
 import WagerList from "./WagersList";
 import { getWagers, Wager } from "@/app/actions/wager";
+import TransferPopup from "./TransferPopup";
 
 export default function Dashboard() {
   const mounted = useClientMounted();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [txns, setTxns] = useState<Transaction[]>([]);
   const [wagers, setWagers] = useState<Wager[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   const hasFetched = useRef(false);
 
@@ -74,6 +76,7 @@ export default function Dashboard() {
   return (
     <>
       <Navbar user={user} />
+
       <section className="md:flex w-full font-sans pb-10">
         {/* LHS */}
         <div className="md:w-1/2 grow">
@@ -105,7 +108,10 @@ export default function Dashboard() {
 
               {/* Transfer Btn */}
               <div className="flex flex-col items-center justify-center space-y-1.5">
-                <Button className="w-12.5 h-12">
+                <Button
+                  onClick={() => setIsTransferOpen(true)}
+                  className="w-12.5 h-12"
+                >
                   <ArrowLeftRight strokeWidth={2.5} className="size-7" />
                 </Button>
 
@@ -181,6 +187,8 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      <TransferPopup open={isTransferOpen} onOpenChange={setIsTransferOpen} />
     </>
   );
 }

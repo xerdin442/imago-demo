@@ -53,6 +53,7 @@ export default function LoginForm() {
                 type="email"
                 id="email"
                 name="email"
+                required
                 placeholder="Enter your email"
               />
             </div>
@@ -70,6 +71,7 @@ export default function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
+                  required
                   placeholder="Enter your password"
                 />
                 <button

@@ -45,10 +45,9 @@ export async function handleCustomAuth(prevState: unknown, formData: FormData) {
       path: "/",
     });
 
+    redirect("/home");
   } catch (err) {
     console.error(err)
     return { error: "An unknown error occurred. Please try again." };
   }
-
-  redirect("/home");
 }
