@@ -8,6 +8,7 @@ import { handleWagerClaim } from "@/app/actions/wager";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Wager, User, WagerAction } from "@/lib/types";
+import { toast } from "react-toastify";
 
 interface WagerListProps {
   wagers: Wager[];
@@ -177,8 +178,6 @@ function WagerActions({
   onWagerUpdate,
   wagers: prevState,
 }: WagerActionsProps) {
-  const [wagerClaim, setWagerClaim] = useState(false);
-
   const processWagerAction = async (action?: WagerAction) => {
     // Optimistic UI update
     onWagerUpdate((prev) =>
@@ -193,13 +192,17 @@ function WagerActions({
     );
 
     try {
-      setWagerClaim(true);
       await handleWagerClaim(wager.id, action);
     } catch (error) {
       onWagerUpdate(prevState); // Rollback optimistic UI changes if server update fails
+
+      if (action) {
+        toast.error(`Failed to ${action} wager prize claim. Please try again`);
+      } else {
+        toast.error(`Failed to claim wager prize. Please try again`);
+      }
+
       console.error(error);
-    } finally {
-      setWagerClaim(false);
     }
   };
 
@@ -226,7 +229,7 @@ function WagerActions({
           onClick={() => processWagerAction()}
           className="bg-green-600 hover:bg-green-700 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
         >
-          {wagerClaim ? "Claiming..." : "Claim win!"}
+          Claim win!
         </Button>
       );
     }
@@ -238,14 +241,14 @@ function WagerActions({
             onClick={() => processWagerAction("accept")}
             className="bg-blue-700 hover:bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold"
           >
-            {wagerClaim ? "Accepting..." : "Accept"}
+            Accept
           </Button>
           <Button
             onClick={() => processWagerAction("contest")}
             variant="destructive"
             className="text-[17px] py-4.5 font-semibold dark:bg-red-700"
           >
-            {wagerClaim ? "Contesting..." : "Contest"}
+            Contest
           </Button>
         </>
       );
