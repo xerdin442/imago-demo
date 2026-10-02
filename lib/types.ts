@@ -1,6 +1,7 @@
 export interface PopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => Promise<void>
 }
 
 export interface User {
@@ -22,6 +23,8 @@ export interface Transaction {
   createdAt: string;
 }
 
+export type WagerAction = "accept" | "contest"
+
 export interface Wager {
   id: number;
   title: string;
@@ -36,9 +39,10 @@ export interface Wager {
 
 export type Network = "BASE" | "SOLANA"
 
-export interface DepositInfo {
+export interface TransactionInfo {
   chain: Network;
   amount: number;
-  depositor: string;
+  depositor?: string;
+  address?: string;
   txIdentifier?: string;
 }

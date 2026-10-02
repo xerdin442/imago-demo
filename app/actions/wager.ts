@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache"
-import { Wager } from "@/lib/types";
+import { Wager, WagerAction } from "@/lib/types";
 
 export async function getWagers(): Promise<Wager[]> {
   const cookieStore = await cookies();
@@ -36,7 +36,7 @@ export async function getWagers(): Promise<Wager[]> {
   }
 }
 
-export async function handleWagerClaim(wagerId: number, action?: 'accept' | 'contest'): Promise<void> {
+export async function handleWagerClaim(wagerId: number, action?: WagerAction): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 

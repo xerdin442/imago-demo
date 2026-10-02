@@ -6,18 +6,17 @@ import { Button } from "./ui/button";
 import { getProfile } from "@/app/actions/profile";
 import { handleWagerClaim } from "@/app/actions/wager";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Wager, User } from "@/lib/types";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Wager, User, WagerAction } from "@/lib/types";
 
 interface WagerListProps {
   wagers: Wager[];
   currentUserId: number;
+  onWagerUpdate: Dispatch<SetStateAction<Wager[]>>;
 }
 
-interface WagerActionsProps {
+interface WagerActionsProps extends WagerListProps {
   wager: Wager;
-  currentUserId: number;
 }
 
 interface WagerUserProps {
@@ -27,7 +26,11 @@ interface WagerUserProps {
   reverse?: boolean;
 }
 
-export default function WagerList({ wagers, currentUserId }: WagerListProps) {
+export default function WagerList({
+  wagers,
+  currentUserId,
+  onWagerUpdate,
+}: WagerListProps) {
   return (
     <ul className="w-full space-y-3.5 font-sans">
       {wagers.map((wager) => {
@@ -101,7 +104,12 @@ export default function WagerList({ wagers, currentUserId }: WagerListProps) {
 
             {/* Action Buttons */}
             <div className="flex items-center justify-center space-x-5 mt-4">
-              <WagerActions wager={wager} currentUserId={currentUserId} />
+              <WagerActions
+                wager={wager}
+                currentUserId={currentUserId}
+                onWagerUpdate={onWagerUpdate}
+                wagers={wagers}
+              />
             </div>
           </li>
         );
@@ -163,17 +171,32 @@ function WagerUser({
   );
 }
 
-function WagerActions({ wager, currentUserId }: WagerActionsProps) {
+function WagerActions({
+  wager,
+  currentUserId,
+  onWagerUpdate,
+  wagers: prevState,
+}: WagerActionsProps) {
   const [wagerClaim, setWagerClaim] = useState(false);
-  const router = useRouter();
 
-  const processWagerAction = async (action?: "accept" | "contest") => {
+  const processWagerAction = async (action?: WagerAction) => {
+    // Optimistic UI update
+    onWagerUpdate((prev) =>
+      prev.map((w) => {
+        if (w.id === wager.id) {
+          if (!action) return { ...w, winner: currentUserId };
+          if (action === "accept") return { ...w, status: "SETTLED" };
+          if (action === "contest") return { ...w, status: "DISPUTE" };
+        }
+        return w;
+      })
+    );
+
     try {
       setWagerClaim(true);
       await handleWagerClaim(wager.id, action);
-
-      router.refresh();
     } catch (error) {
+      onWagerUpdate(prevState); // Rollback optimistic UI changes if server update fails
       console.error(error);
     } finally {
       setWagerClaim(false);

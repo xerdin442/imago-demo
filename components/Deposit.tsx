@@ -1,6 +1,6 @@
 "use client";
 
-import { DepositInfo, Network, PopupProps } from "@/lib/types";
+import { TransactionInfo, Network, PopupProps } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -12,9 +12,8 @@ import {
 } from "@reown/appkit/react";
 import { X } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { processDeposit } from "@/app/actions/transaction";
+import { processTransaction } from "@/app/actions/transaction";
 import { ChainNamespace } from "@reown/appkit/networks";
 import {
   readContract,
@@ -33,7 +32,7 @@ import type { Provider as SolanaProvider } from "@reown/appkit-adapter-solana";
 import NetworkSelect from "./NetworkSelect";
 import { wagmiAdapter } from "@/appkit/config";
 
-export default function Deposit({ open, onOpenChange }: PopupProps) {
+export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
   const [depositAmount, setDepositAmount] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [chainNamespace, setChainNameSpace] = useState<ChainNamespace>();
@@ -42,7 +41,6 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
   >("idle");
   const [isPending, setIsPending] = useState(false);
 
-  const router = useRouter();
   const { open: openAppkit } = useAppKit();
   const { isConnected, address, caipAddress } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider(chainNamespace || "eip155");
@@ -103,7 +101,7 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
     }
 
     const usdcAddress = getUsdcAddress(caipAddress as string);
-    const depositInfo: DepositInfo = {
+    const depositInfo: TransactionInfo = {
       chain: network,
       amount: Number(depositAmount),
       depositor: data.get("address") as string,
@@ -163,7 +161,10 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
         if (receipt.status === "success") {
           // Process deposit info
           setTxStatus("confirming");
-          await processDeposit({ ...depositInfo, txIdentifier: hash });
+          await processTransaction(
+            { ...depositInfo, txIdentifier: hash },
+            "deposit"
+          );
         } else {
           toast.error("Deposit transaction failed!");
         }
@@ -248,7 +249,10 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
         if (!confirmation.value.err) {
           // Process deposit info
           setTxStatus("confirming");
-          await processDeposit({ ...depositInfo, txIdentifier: signature });
+          await processTransaction(
+            { ...depositInfo, txIdentifier: signature },
+            "deposit"
+          );
         } else {
           toast.error("Deposit transaction failed!");
         }
@@ -262,7 +266,7 @@ export default function Deposit({ open, onOpenChange }: PopupProps) {
     }
 
     // Refresh background data
-    router.refresh();
+    await onSuccess();
 
     // Close dialog box
     onOpenChange(false);

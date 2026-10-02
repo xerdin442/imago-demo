@@ -10,18 +10,19 @@ import { exploreWagers, handleJoinWager } from "@/app/actions/wager";
 import Image from "next/image";
 import { getProfile } from "@/app/actions/profile";
 import { formatAmount } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
-export default function WagerSearch({ open, onOpenChange }: PopupProps) {
+export default function WagerSearch({
+  open,
+  onOpenChange,
+  onSuccess,
+}: PopupProps) {
   const [inviteCode, setInviteCode] = useState("");
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<Wager | null>(null);
   const [wagerCreator, setWagerCreator] = useState<User | null>(null);
-
-  const router = useRouter();
 
   const handleSearch = async () => {
     if (!inviteCode.trim()) {
@@ -67,7 +68,7 @@ export default function WagerSearch({ open, onOpenChange }: PopupProps) {
       }
 
       // Refresh background data
-      router.refresh();
+      await onSuccess();
       // Close dialog box
       onOpenChange(false);
       // Notify user

@@ -9,33 +9,34 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { PopupProps } from "@/lib/types";
 import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
 
-export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
+export default function FundsTransfer({
+  open,
+  onOpenChange,
+  onSuccess,
+}: PopupProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [state, formAction, isPending] = useActionState(
     processFundsTransfer,
     null
   );
 
-  const router = useRouter();
-
   useEffect(() => {
-    (() => {
+    (async () => {
       if (state?.error) {
         setIsVisible(true);
       }
 
       if (state?.message) {
         // Refresh background data
-        router.refresh();
+        await onSuccess();
         // Close dialog box
         onOpenChange(false);
         // Notify user
         toast.success(state.message);
       }
     })();
-  }, [router, state, onOpenChange]);
+  }, [state, onOpenChange, onSuccess]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -40,40 +40,40 @@ export default function Dashboard() {
 
   const hasFetched = useRef(false);
 
+  const fetchData = async () => {
+    const socialAuth = searchParams.get("socialAuth");
+
+    try {
+      // Fetch user profile
+      let userData;
+      if (socialAuth) {
+        userData = await handleSocialAuth(socialAuth);
+      } else {
+        userData = await getProfile();
+      }
+
+      setUser(userData);
+
+      // Fetch user's wagers and transactions
+      setDataLoading(true);
+      const txData = await getTransactions();
+      const wagerData = await getWagers();
+
+      setTxns(txData);
+      setWagers(wagerData);
+    } catch (error) {
+      console.error("Dashboard initialization failed", error);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!mounted || hasFetched.current) return;
 
     const initializeDashboard = async () => {
       hasFetched.current = true;
-      const socialAuth = searchParams.get("socialAuth");
-
-      try {
-        // Fetch user profile
-        let userData;
-        if (socialAuth) {
-          userData = await handleSocialAuth(socialAuth);
-        } else {
-          userData = await getProfile();
-        }
-
-        if (!userData) {
-          window.location.href = "/";
-          return;
-        }
-        setUser(userData);
-
-        // Fetch user's wagers and transactions
-        setDataLoading(true);
-        const txData = await getTransactions();
-        const wagerData = await getWagers();
-
-        setTxns(txData);
-        setWagers(wagerData);
-      } catch (error) {
-        console.error("Dashboard initialization failed", error);
-      } finally {
-        setDataLoading(false);
-      }
+      await fetchData();
     };
 
     initializeDashboard();
@@ -175,7 +175,11 @@ export default function Dashboard() {
                 You currently have no wagers. Create one!
               </p>
             ) : (
-              <WagerList wagers={wagers} currentUserId={user.id} />
+              <WagerList
+                wagers={wagers}
+                currentUserId={user.id}
+                onWagerUpdate={setWagers}
+              />
             )}
           </div>
         </div>
@@ -202,13 +206,22 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <FundsTransfer open={isTransferOpen} onOpenChange={setIsTransferOpen} />
+      <FundsTransfer
+        open={isTransferOpen}
+        onOpenChange={setIsTransferOpen}
+        onSuccess={fetchData}
+      />
 
-      <Deposit open={isDepositOpen} onOpenChange={setIsDepositOpen} />
+      <Deposit
+        open={isDepositOpen}
+        onOpenChange={setIsDepositOpen}
+        onSuccess={fetchData}
+      />
 
       <WagerSearch
         open={isWagerSearchOpen}
         onOpenChange={setIsWagerSearchOpen}
+        onSuccess={fetchData}
       />
 
       <ToastContainer autoClose={2500} theme={resolvedTheme} />
