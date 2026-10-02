@@ -45,3 +45,34 @@ export async function getWagers(): Promise<Wager[]> {
     redirect("/");
   }
 }
+
+export async function handleWagerClaim(wagerId: number, action?: 'accept' | 'contest'): Promise<void> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    redirect("/");
+  }
+
+  try {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/${wagerId}/claim/${action || ""}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401) {
+      cookieStore.delete("token");
+      redirect("/");
+    }
+
+    if (!response.ok) redirect("/");
+
+    return;
+  } catch (error) {
+    console.error("Wager prize claim error:", error);
+    redirect("/");
+  }
+}

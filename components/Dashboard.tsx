@@ -141,6 +141,7 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* List */}
             {dataLoading || !user ? (
               <div className="w-full flex items-center justify-center pt-3">
                 <Loader2
@@ -150,11 +151,11 @@ export default function Dashboard() {
                 />
               </div>
             ) : wagers.length < 1 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 font-semibold md:text-lg pt-2">
-                No wagers yet...
+              <p className="text-center text-gray-500 dark:text-gray-400 font-semibold md:text-lg pt-4">
+                You currently have no wagers. Create one!
               </p>
             ) : (
-              <WagerList wagers={[]} currentUserId={user.id} />
+              <WagerList wagers={wagers} currentUserId={user.id} />
             )}
           </div>
         </div>

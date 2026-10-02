@@ -49,7 +49,12 @@ export default function LoginForm() {
               <Label htmlFor="email" className="text-base ml-0.5 font-semibold">
                 Email
               </Label>
-              <Input type="email" id="email" placeholder="Enter your email" />
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+              />
             </div>
 
             {/* Password input */}
@@ -64,6 +69,7 @@ export default function LoginForm() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   id="password"
+                  name="password"
                   placeholder="Enter your password"
                 />
                 <button

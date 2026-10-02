@@ -4,7 +4,7 @@ import { Check, Copy } from "lucide-react";
 import { cn, formatAmount, formatUsername } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { getProfile, User } from "@/app/actions/profile";
-import { Wager } from "@/app/actions/wager";
+import { handleWagerClaim, Wager } from "@/app/actions/wager";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -37,13 +37,13 @@ export default function WagerList({ wagers, currentUserId }: WagerListProps) {
         return (
           <li
             key={wager.id}
-            className="bg-secondary-background border-2 border-black p-4 pt-5 rounded-base shadow-neo w-full"
+            className="bg-secondary-background border-2 border-black p-4 md:pt-5 rounded-base shadow-neo w-full"
           >
             {/* Header */}
             <div className="border-b border-gray-700 pb-3 mb-3">
               <div className="flex items-center justify-between">
                 {/* Title */}
-                <h3 className="text-lg md:text-xl font-semibold text-black truncate">
+                <h3 className="text-[17px] md:text-xl font-semibold truncate">
                   {wager.title}
                 </h3>
 
@@ -59,7 +59,7 @@ export default function WagerList({ wagers, currentUserId }: WagerListProps) {
               {/* Player One */}
               <WagerUser userId={wager.playerOne} isWinner={isP1Winner} />
 
-              <span className="text-gray-500 font-bold italic shrink-0 mx-2">
+              <span className="text-gray-500 dark:text-gray-400 font-bold italic shrink-0 mx-2">
                 VS
               </span>
 
@@ -75,7 +75,7 @@ export default function WagerList({ wagers, currentUserId }: WagerListProps) {
             <div className="bg-gray-800 border-2 border-black p-3 rounded-base flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 {/* Status */}
-                <span className="text-sm font-bold uppercase text-blue-400">
+                <span className="text-xs md:text-sm font-bold uppercase text-blue-400">
                   {wager.status}
                 </span>
 
@@ -92,7 +92,7 @@ export default function WagerList({ wagers, currentUserId }: WagerListProps) {
               </div>
 
               {/* Stake */}
-              <span className="text-lg font-black text-white">
+              <span className="md:text-lg font-black text-white">
                 {formatAmount(wager.amount)}
               </span>
             </div>
@@ -152,7 +152,7 @@ function WagerUser({
       <span
         className={cn(
           "text-base font-bold truncate",
-          isWinner ? "text-green-600" : "text-black"
+          isWinner ? "text-green-600" : "text-black dark:text-white"
         )}
       >
         {user ? formatUsername(user.username) : fallbackName}
@@ -162,15 +162,28 @@ function WagerUser({
 }
 
 function WagerActions({ wager, currentUserId }: WagerActionsProps) {
+  const [wagerClaim, setWagerClaim] = useState(false);
+
+  const processWagerAction = (action?: "accept" | "contest") => {
+    try {
+      setWagerClaim(true);
+      handleWagerClaim(wager.id, action);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setWagerClaim(false);
+    }
+  };
+
   if (wager.status === "PENDING") {
     return (
       <>
-        <Button className="bg-blue-700 hover:bg-blue-900 text-white text-[17px] py-4.5 font-semibold">
+        <Button className="bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold">
           Update
         </Button>
         <Button
           variant="destructive"
-          className="text-white text-[17px] py-4.5 font-semibold hover:bg-red-700"
+          className="text-white text-[17px] py-4.5 font-semibold dark:bg-red-700"
         >
           Delete
         </Button>
@@ -181,8 +194,11 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
   if (wager.status === "ACTIVE") {
     if (!wager.winner) {
       return (
-        <Button className="bg-green-600 hover:bg-green-700 text-white text-[17px] py-4.5 font-semibold">
-          Claim win!
+        <Button
+          onClick={() => processWagerAction()}
+          className="bg-green-600 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
+        >
+          {wagerClaim ? "Claiming..." : "Claim win!"}
         </Button>
       );
     }
@@ -190,10 +206,19 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
     if (wager.winner !== currentUserId) {
       return (
         <>
-          <Button className="bg-blue-700 hover:bg-blue-900 text-white text-[17px] py-4.5 font-semibold">
-            Accept
+          <Button
+            onClick={() => processWagerAction("accept")}
+            className="bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold"
+          >
+            {wagerClaim ? "Accepting..." : "Accept"}
           </Button>
-          <Button variant="destructive">Contest</Button>
+          <Button
+            onClick={() => processWagerAction("contest")}
+            variant="destructive"
+            className="text-[17px] py-4.5 font-semibold dark:bg-red-700"
+          >
+            {wagerClaim ? "Contesting..." : "Contest"}
+          </Button>
         </>
       );
     }
@@ -201,7 +226,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
     return (
       <Button
         disabled
-        className="bg-green-600 text-white text-[17px] py-4.5 font-semibold"
+        className="bg-green-600 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
       >
         Awaiting confirmation...
       </Button>
@@ -212,7 +237,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
     return (
       <Button
         variant="destructive"
-        className="text-white text-[17px] py-4.5 font-semibold hover:bg-red-700"
+        className="text-white text-[17px] py-4.5 font-semibold dark:bg-red-700"
       >
         Go to chat
       </Button>
