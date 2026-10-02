@@ -178,7 +178,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
       }
     } else {
       const rpcUrl =
-        process.env.NODE_ENV === "development"
+        process.env.WALLET_CONNECTION_MODE === "testnet"
           ? "https://api.devnet.solana.com"
           : "https://api.mainnet-beta.solana.com";
 
