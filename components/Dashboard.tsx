@@ -17,11 +17,70 @@ import { Button } from "./ui/button";
 import { formatAmount } from "@/lib/utils";
 import TxnsList from "./TxnsList";
 import { getTransactions, Transaction } from "@/app/actions/transaction";
+import WagerList from "./WagersList";
+import { Wager } from "@/app/actions/wager";
+
+const mockWagers: Wager[] = [
+  {
+    id: 1,
+    title: "1v1 Rust Sniper Only",
+    category: "GAMING",
+    amount: 50.0,
+    status: "PENDING",
+    playerOne: 1,
+    winner: null,
+    inviteCode: "RUST-772",
+  },
+  {
+    id: 2,
+    title: "Chess Blitz 3min",
+    category: "STRATEGY",
+    amount: 15.0,
+    status: "ACTIVE",
+    playerOne: 2,
+    playerTwo: 1,
+    winner: null,
+    inviteCode: "CHESS-99",
+  },
+  {
+    id: 3,
+    title: "UFC 298: Volkanovski vs Topuria",
+    category: "SPORTS",
+    amount: 100.0,
+    status: "ACTIVE",
+    playerOne: 1,
+    playerTwo: 2,
+    winner: 1,
+    inviteCode: "UFC-298",
+  },
+  {
+    id: 4,
+    title: "FIFA 24 Finals",
+    category: "GAMING",
+    amount: 25.0,
+    status: "DISPUTE",
+    playerOne: 2,
+    playerTwo: 1,
+    winner: 2,
+    inviteCode: "FIFA-01",
+  },
+  {
+    id: 5,
+    title: "NBA Finals - Game 7",
+    category: "SPORTS",
+    amount: 250.0,
+    status: "SETTLED",
+    playerOne: 1,
+    playerTwo: 2,
+    winner: 1,
+    inviteCode: "NBA-SETTLED",
+  },
+];
 
 export default function Dashboard() {
   const mounted = useClientMounted();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<User | undefined>(undefined);
+  const [user, setUser] = useState<User>();
   const [txns, setTxns] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
@@ -68,7 +127,7 @@ export default function Dashboard() {
   return (
     <>
       <Navbar user={user} />
-      <section className="md:flex w-full font-sans">
+      <section className="md:flex w-full font-sans pb-10">
         {/* LHS */}
         <div className="md:w-1/2 grow">
           {/* Wallet */}
@@ -111,7 +170,7 @@ export default function Dashboard() {
           {/* Wagers */}
           <div className="mt-3 px-4">
             {/* Header */}
-            <div className="flex items-center justify-between mb-3.5 md:px-2">
+            <div className="flex items-center justify-between mb-4 md:px-2">
               <h3 className="text-3xl font-extrabold">Wagers</h3>
 
               <div className="flex items-center justify-center space-x-4">
@@ -135,8 +194,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* List */}
-            <div id="wagers-list"></div>
+            {user ? <WagerList wagers={mockWagers} currentUserId={user.id} /> : <></>}
           </div>
         </div>
 
@@ -153,7 +211,7 @@ export default function Dashboard() {
               />
             </div>
           ) : txns.length < 1 ? (
-            <p className="text-center text-gray-400 font-semibold md:text-lg pt-2">
+            <p className="text-center text-gray-500 dark:text-gray-400 font-semibold md:text-lg pt-2">
               No transactions yet...
             </p>
           ) : (

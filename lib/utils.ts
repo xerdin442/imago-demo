@@ -22,3 +22,7 @@ export const formatDate = (date: Date) => {
     hour12: true,
   }).format(date);
 };
+
+export const formatUsername = (name: string) => {
+  return name.length > 10 ? `@${name.slice(0, 8)}...` : `@${name}`;
+};

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export interface User {
+  id: number
   balance: number
   username: string
   profileImage: string
@@ -11,7 +12,7 @@ export interface User {
   lastName: string
 }
 
-export async function getProfile(): Promise<User> {
+export async function getProfile(id?: number): Promise<User> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -20,7 +21,7 @@ export async function getProfile(): Promise<User> {
   }
 
   try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/user/profile`, {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/user/${id ? `${id}` : 'profile'}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
