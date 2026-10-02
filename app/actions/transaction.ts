@@ -1,6 +1,7 @@
 "use server"
 
 import { DepositInfo, Transaction } from "@/lib/types";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -35,6 +36,34 @@ export async function getTransactions(): Promise<Transaction[]> {
   }
 }
 
-export async function processDeposit(data: DepositInfo) {
-  return { error: '' }
+export async function processDeposit(info: DepositInfo) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    redirect("/");
+  }
+
+  try {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/wallet/deposit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(info)
+    });
+
+    if (response.status === 401) {
+      cookieStore.delete("token");
+      redirect("/");
+    }
+
+    revalidatePath("/home");
+
+    return;
+  } catch (error) {
+    console.error("Deposit processing error:", error);
+    redirect("/");
+  }
 }

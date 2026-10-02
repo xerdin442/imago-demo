@@ -23,8 +23,11 @@ import FundsTransfer from "./FundsTransfer";
 import WagerSearch from "./WagerSearch";
 import { Wager, Transaction, User } from "@/lib/types";
 import Deposit from "./Deposit";
+import { ToastContainer } from "react-toastify";
+import { useTheme } from "next-themes";
 
 export default function Dashboard() {
+  const { resolvedTheme } = useTheme();
   const mounted = useClientMounted();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User>();
@@ -191,7 +194,7 @@ export default function Dashboard() {
             </div>
           ) : txns.length < 1 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 font-semibold md:text-lg pt-2">
-              No transactions yet...
+              No transactions yet.
             </p>
           ) : (
             <TxnsList txns={txns} />
@@ -207,6 +210,8 @@ export default function Dashboard() {
         open={isWagerSearchOpen}
         onOpenChange={setIsWagerSearchOpen}
       />
+
+      <ToastContainer autoClose={2500} theme={resolvedTheme} />
     </>
   );
 }

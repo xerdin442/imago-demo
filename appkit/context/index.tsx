@@ -38,9 +38,8 @@ export const modal = createAppKit({
     analytics: true,
   },
   themeVariables: {
-    "--w3m-accent": "#000000",
-    "--w3m-border-radius-master": "var(--radius-base)",
-    "--w3m-font-family": "var(--font-dm-sans)",
+    "--apkt-border-radius-master": "5px",
+    "--apkt-z-index": 9999,
   },
 });
 

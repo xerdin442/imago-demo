@@ -15,7 +15,7 @@ export default function TxnsList({ txns }: TxnsListProps) {
       {txns.map((tx) => {
         const isDeposit = tx.type === "DEPOSIT";
 
-        const amountColor = isDeposit ? "text-green-600" : "text-destructive dark:text-pink-800";
+        const amountColor = isDeposit ? "text-green-500" : "text-destructive dark:text-pink-800";
         const iconBgColor = isDeposit ? "bg-green-200" : "bg-red-200";
         const iconColor = isDeposit ? "text-green-700" : "text-red-700";
         const statusColor =
