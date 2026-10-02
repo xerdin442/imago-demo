@@ -5,6 +5,21 @@ import Navbar from "./Navbar";
 import { useEffect, useRef, useState } from "react";
 import { getProfile, handleSocialAuth, User } from "@/app/actions/profile";
 import { useClientMounted } from "@/hooks/useClientMount";
+import {
+  ArrowLeftRight,
+  MoveDownLeft,
+  MoveUpRight,
+  PlusIcon,
+  Search,
+} from "lucide-react";
+import { Button } from "./ui/button";
+
+const formatBalance = (balance: number): string => {
+  return `$${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(balance)}`;
+};
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -41,6 +56,85 @@ export default function Dashboard() {
   return (
     <>
       <Navbar user={user} />
+      <section className="md:flex w-full font-sans">
+        {/* LHS */}
+        <div className="md:w-1/2 grow">
+          {/* Wallet */}
+          <div className="text-center py-8 px-4">
+            <p className="font-display text-[52px] tracking-wider">
+              {user ? formatBalance(user.balance) : "$0.00"}
+            </p>
+
+            {/* Action buttons */}
+            <div className="mt-4 flex items-center justify-center space-x-10 lg:space-x-12">
+              {/* Deposit Btn */}
+              <div className="flex flex-col items-center justify-center space-y-1.5">
+                <Button className="w-12.5 h-12">
+                  <MoveDownLeft strokeWidth={2.5} className="size-6.5" />
+                </Button>
+
+                <p className="md:text-lg font-semibold">Deposit</p>
+              </div>
+
+              {/* Withdraw Btn */}
+              <div className="flex flex-col items-center justify-center space-y-1.5">
+                <Button className="w-12.5 h-12">
+                  <MoveUpRight strokeWidth={2.5} className="size-6.5" />
+                </Button>
+
+                <p className="md:text-lg font-semibold">Withdraw</p>
+              </div>
+
+              {/* Transfer Btn */}
+              <div className="flex flex-col items-center justify-center space-y-1.5">
+                <Button className="w-12.5 h-12">
+                  <ArrowLeftRight strokeWidth={2.5} className="size-7" />
+                </Button>
+
+                <p className="md:text-lg font-semibold">Transfer</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Wagers */}
+          <div className="mt-3 px-4 border-b border-black md:border-b-0">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3.5 md:px-2">
+              <h3 className="text-3xl font-extrabold">Wagers</h3>
+
+              <div className="flex items-center justify-center space-x-4">
+                {/* Create Wager Btn */}
+                <Button className="py-5.5">
+                  <PlusIcon
+                    size={30}
+                    strokeWidth={2.5}
+                    className="md:hidden size-6.25"
+                  />
+
+                  <span className="hidden md:block text-xl font-bold">
+                    Create wager
+                  </span>
+                </Button>
+
+                {/* Search Icon */}
+                <Button className="w-12.5 h-11.5">
+                  <Search strokeWidth={2.5} className="size-6"></Search>
+                </Button>
+              </div>
+            </div>
+
+            {/* List */}
+            <div id="wagers-list"></div>
+          </div>
+        </div>
+
+        {/* RHS */}
+        <div className="md:w-1/2 px-4 grow">
+          <h3 className="text-3xl font-extrabold mb-3">Transactions</h3>
+
+          {/* List */}
+        </div>
+      </section>
     </>
   );
 }
