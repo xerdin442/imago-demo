@@ -7,7 +7,7 @@ import { http } from 'wagmi'
 export const projectId = process.env.NEXT_PUBLIC_APPKIT_PROJECT_ID as string
 if (!projectId) throw new Error('Project ID is not defined');
 
-const isTestnet = process.env.WALLET_CONNECTION_MODE === "testnet";
+const isTestnet = process.env.NEXT_PUBLIC_WALLET_CONNECTION_MODE === "testnet";
 export const baseNetworks = [isTestnet ? baseSepolia : base] as [AppKitNetwork, ...AppKitNetwork[]]
 export const solanaNetworks = [isTestnet ? solanaDevnet : solana] as [AppKitNetwork, ...AppKitNetwork[]]
 

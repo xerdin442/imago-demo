@@ -265,7 +265,7 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
         console.error(error);
         return;
       }
-    }
+    };
 
     // Refresh background data
     await onSuccess();
