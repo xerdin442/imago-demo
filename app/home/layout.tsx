@@ -1,22 +1,7 @@
-import { ThemeProvider } from "@/components/ThemeProvider";
-
-const Layout = ({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) => {
-  return (
-    <div className="relative min-h-screen">
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        {children}
-      </ThemeProvider>
-    </div>
-  );
-};
-
-export default Layout;
+}>) {
+  return <div className="relative min-h-screen">{children}</div>;
+}

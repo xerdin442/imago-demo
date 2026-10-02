@@ -34,7 +34,7 @@ export default function LoginForm() {
 
           {/* Invalid input warning */}
           {state?.error && isVisible && (
-            <div className="flex text-red-600 text-sm mb-4 bg-red-100 px-3 py-4 rounded-sm justify-between items-center transition-all">
+            <div className="flex text-red-600 text-sm mb-4 bg-red-200 px-3 py-4 rounded-sm justify-between items-center transition-all">
               <span className="text-base font-semibold">{state.error}</span>
               <X
                 className="h-5 w-5 cursor-pointer"

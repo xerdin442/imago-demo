@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 export interface User {
   balance: number
+  username: string
   profileImage: string
   firstName: string
   lastName: string
