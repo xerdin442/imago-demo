@@ -104,3 +104,40 @@ export async function exploreWagers(inviteCode: string): Promise<Wager | { error
     redirect("/");
   }
 }
+
+export async function handleJoinWager(wagerId: number): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    redirect("/");
+  }
+
+  try {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/${wagerId}/join`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      cookieStore.delete("token");
+      redirect("/");
+    }
+
+    if (!response.ok) {
+      return data.message as string;
+    };
+
+    revalidatePath("/home");
+
+    return null;
+  } catch (error) {
+    console.error("Join wager error:", error);
+    redirect("/");
+  }
+}

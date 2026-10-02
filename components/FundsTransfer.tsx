@@ -21,8 +21,12 @@ export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
       if (state?.error) {
         setIsVisible(true);
       }
+
+      if (state?.message) {
+        onOpenChange(false);
+      }
     })();
-  }, [state]);
+  }, [state, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -183,7 +183,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
   if (wager.status === "PENDING") {
     return (
       <>
-        <Button className="bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold">
+        <Button className="bg-blue-700 hover:bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold">
           Update
         </Button>
         <Button
@@ -201,7 +201,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
       return (
         <Button
           onClick={() => processWagerAction()}
-          className="bg-green-600 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
+          className="bg-green-600 hover:bg-green-700 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
         >
           {wagerClaim ? "Claiming..." : "Claim win!"}
         </Button>
@@ -213,7 +213,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
         <>
           <Button
             onClick={() => processWagerAction("accept")}
-            className="bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold"
+            className="bg-blue-700 hover:bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold"
           >
             {wagerClaim ? "Accepting..." : "Accept"}
           </Button>
@@ -231,7 +231,7 @@ function WagerActions({ wager, currentUserId }: WagerActionsProps) {
     return (
       <Button
         disabled
-        className="bg-green-600 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
+        className="bg-green-600 hover:bg-green-700 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
       >
         Awaiting confirmation...
       </Button>
