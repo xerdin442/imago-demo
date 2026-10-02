@@ -7,48 +7,60 @@ import { getProfile, handleSocialAuth, User } from "@/app/actions/profile";
 import { useClientMounted } from "@/hooks/useClientMount";
 import {
   ArrowLeftRight,
+  Loader2,
   MoveDownLeft,
   MoveUpRight,
   PlusIcon,
   Search,
 } from "lucide-react";
 import { Button } from "./ui/button";
-
-const formatBalance = (balance: number): string => {
-  return `$${new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(balance)}`;
-};
+import { formatAmount } from "@/lib/utils";
+import TxnsList from "./TxnsList";
+import { getTransactions, Transaction } from "@/app/actions/transaction";
 
 export default function Dashboard() {
+  const mounted = useClientMounted();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | undefined>(undefined);
-  const mounted = useClientMounted();
+  const [txns, setTxns] = useState<Transaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
 
   const hasFetched = useRef(false);
 
   useEffect(() => {
     if (!mounted || hasFetched.current) return;
 
-    const initUser = async () => {
+    const initializeDashboard = async () => {
       hasFetched.current = true;
       const socialAuth = searchParams.get("socialAuth");
 
       try {
+        // Fetch user profile
         let userData;
         if (socialAuth) {
           userData = await handleSocialAuth(socialAuth);
         } else {
           userData = await getProfile();
         }
+
+        if (!userData) {
+          window.location.href = "/";
+          return;
+        }
         setUser(userData);
-      } catch (err) {
-        console.error("Failed to load user", err);
+
+        // Fetch Transactions
+        setTxLoading(true);
+        const txData = await getTransactions();
+        setTxns(txData);
+      } catch (error) {
+        console.error("Dashboard initialization failed", error);
+      } finally {
+        setTxLoading(false);
       }
     };
 
-    initUser();
+    initializeDashboard();
   }, [mounted, searchParams]);
 
   if (!mounted) return null;
@@ -60,9 +72,9 @@ export default function Dashboard() {
         {/* LHS */}
         <div className="md:w-1/2 grow">
           {/* Wallet */}
-          <div className="text-center py-8 px-4">
+          <div className="text-center pt-4 pb-8 md:py-8 px-4">
             <p className="font-display text-[52px] tracking-wider">
-              {user ? formatBalance(user.balance) : "$0.00"}
+              {user ? formatAmount(user.balance) : "$0.00"}
             </p>
 
             {/* Action buttons */}
@@ -97,7 +109,7 @@ export default function Dashboard() {
           </div>
 
           {/* Wagers */}
-          <div className="mt-3 px-4 border-b border-black md:border-b-0">
+          <div className="mt-3 px-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-3.5 md:px-2">
               <h3 className="text-3xl font-extrabold">Wagers</h3>
@@ -129,10 +141,24 @@ export default function Dashboard() {
         </div>
 
         {/* RHS */}
-        <div className="md:w-1/2 px-4 grow">
+        <div className="md:w-1/2 px-4 grow mt-6 md:mt-0">
           <h3 className="text-3xl font-extrabold mb-3">Transactions</h3>
 
-          {/* List */}
+          {txLoading ? (
+            <div className="w-full flex items-center justify-center pt-3">
+              <Loader2
+                size={32}
+                strokeWidth={2.5}
+                className="animate-spin text-gray-500"
+              />
+            </div>
+          ) : txns.length < 1 ? (
+            <p className="text-center text-gray-400 font-semibold md:text-lg pt-2">
+              No transactions yet...
+            </p>
+          ) : (
+            <TxnsList txns={txns} />
+          )}
         </div>
       </section>
     </>
