@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { apiAction, isApiError } from "@/lib/api";
 
 export async function redirectToGoogle() {
   const backendUrl = process.env.BACKEND_API_URL;
@@ -11,7 +12,6 @@ export async function redirectToGoogle() {
     throw new Error("Missing Auth Environment Variables");
   }
 
-  // Redirect user to Google auth screen
   const targetUrl = `${backendUrl}/auth/google?redirectUrl=${encodeURIComponent(redirectUrl)}`;
   redirect(targetUrl);
 }
@@ -20,34 +20,21 @@ export async function handleCustomAuth(prevState: unknown, formData: FormData) {
   const email = formData.get("email");
   const password = formData.get("password");
 
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+  const result = await apiAction<{ token: string }>("/auth/login", {
+    method: "POST",
+    body: { email, password },
+    auth: false,
+  });
 
-    const data = await response.json();
+  if (isApiError(result)) return result;
 
-    if (!response.ok) {
-      const errorMsg = typeof data.message === "string"
-        ? data.message
-        : data.message[0].charAt(0).toUpperCase() + data.message[0].slice(1);
-
-      return { error: errorMsg };
-    }
-
-    const cookieStore = await cookies();
-    cookieStore.set("token", data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-  } catch (err) {
-    console.error(err)
-    return { error: "An unknown error occurred. Please try again." };
-  }
+  const cookieStore = await cookies();
+  cookieStore.set("token", result.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
 
   redirect("/home");
 }

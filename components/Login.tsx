@@ -30,7 +30,9 @@ export default function LoginForm() {
       <section className="flex items-center justify-center font-sans">
         <div className="w-full max-w-md mx-auto p-8 sm:p-10 z-10">
           {/* Header */}
-          <h1 className="text-4xl font-bold mb-6 text-center">Welcome back!</h1>
+          <h1 className="text-4xl font-bold mb-6 text-center tracking-[-0.015em]">
+            Welcome back!
+          </h1>
 
           {/* Invalid input warning */}
           {state?.error && isVisible && (
@@ -107,17 +109,17 @@ export default function LoginForm() {
               redirectToGoogle();
             }}
             disabled={isLoading}
-            className="w-full py-6.5 font-mediumtext-base"
+            className="w-full py-6.5 font-medium text-base tracking-[-0.01em]"
           >
             {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
               <Image
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1024px-Google_%22G%22_logo.svg.png"
+                src="/google.png"
                 alt="Google"
-                width={20}
-                height={20}
-                className="w-5 h-5 mr-4"
+                width={400}
+                height={420}
+                className="w-5 h-5 mr-1.5"
               />
             )}
             Continue with Google

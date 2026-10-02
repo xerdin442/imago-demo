@@ -1,7 +1,6 @@
 export interface PopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => Promise<void>
 }
 
 export interface User {
@@ -45,4 +44,17 @@ export interface TransactionInfo {
   depositor?: string;
   address?: string;
   txIdentifier?: string;
+}
+
+export interface ApiErrorResult {
+  error: string;
+}
+
+export function isApiError(value: unknown): value is ApiErrorResult {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "error" in value &&
+    typeof (value as Record<string, unknown>).error === "string"
+  );
 }

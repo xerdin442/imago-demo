@@ -1,6 +1,6 @@
 "use client";
 
-import { PopupProps } from "@/lib/types";
+import { isApiError, PopupProps } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { useActionState, useEffect, useState } from "react";
 import { Input } from "./ui/input";
@@ -11,6 +11,8 @@ import { createWager } from "@/app/actions/wager";
 import { toast } from "react-toastify";
 import { formatAmount } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   Select,
   SelectTrigger,
@@ -35,36 +37,45 @@ const categories = [
 export default function CreateWager({
   open,
   onOpenChange,
-  onSuccess,
   availableBalance,
 }: PopupProps & { availableBalance: number }) {
+  const queryClient = useQueryClient();
   const [isVisible, setIsVisible] = useState(false);
   const [state, formAction, isPending] = useActionState(createWager, null);
   const [lastProcessedMessage, setLastProcessedMessage] = useState<
     string | null
   >(null);
 
+  const errorMessage = isApiError(state) ? state.error : null;
+  const successMessage = state && !isApiError(state) ? state.message : null;
+
   useEffect(() => {
     (async () => {
-      if (state?.error) {
+      if (errorMessage) {
         setIsVisible(true);
       }
 
-      if (state?.message && state.message !== lastProcessedMessage) {
+      if (successMessage && successMessage !== lastProcessedMessage) {
         // Mark as processed
-        setLastProcessedMessage(state.message);
+        setLastProcessedMessage(successMessage);
 
-        // Refresh background data
-        await onSuccess();
+        // Refresh wagers list
+        await queryClient.invalidateQueries({ queryKey: queryKeys.wagers() });
 
         // Close dialog box
         onOpenChange(false);
 
         // Notify user
-        toast.success(state.message);
+        toast.success(successMessage);
       }
     })();
-  }, [state, onOpenChange, onSuccess, lastProcessedMessage]);
+  }, [
+    errorMessage,
+    successMessage,
+    onOpenChange,
+    queryClient,
+    lastProcessedMessage,
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,9 +87,9 @@ export default function CreateWager({
         </DialogHeader>
 
         {/* Invalid input warning */}
-        {state?.error && isVisible && (
+        {errorMessage && isVisible && (
           <div className="flex text-red-600 text-sm mb-4 bg-red-200 px-3 py-4 rounded-sm justify-between items-center transition-all">
-            <span className="text-base font-semibold">{state.error}</span>
+            <span className="text-base font-semibold">{errorMessage}</span>
             <X
               className="h-5 w-5 cursor-pointer"
               onClick={() => setIsVisible(false)}

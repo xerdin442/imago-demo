@@ -7,44 +7,55 @@ import { processFundsTransfer } from "@/app/actions/transfer";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { PopupProps } from "@/lib/types";
+import { isApiError, PopupProps } from "@/lib/types";
 import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
-export default function FundsTransfer({
-  open,
-  onOpenChange,
-  onSuccess,
-}: PopupProps) {
+export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
+  const queryClient = useQueryClient();
   const [isVisible, setIsVisible] = useState(false);
   const [state, formAction, isPending] = useActionState(
     processFundsTransfer,
-    null
+    null,
   );
   const [lastProcessedMessage, setLastProcessedMessage] = useState<
     string | null
   >(null);
 
+  const errorMessage = isApiError(state) ? state.error : null;
+  const successMessage = state && !isApiError(state) ? state.message : null;
+
   useEffect(() => {
     (async () => {
-      if (state?.error) {
+      if (errorMessage) {
         setIsVisible(true);
       }
 
-      if (state?.message && state.message !== lastProcessedMessage) {
+      if (successMessage && successMessage !== lastProcessedMessage) {
         // Mark as processed
-        setLastProcessedMessage(state.message);
+        setLastProcessedMessage(successMessage);
 
-        // Refresh background data
-        await onSuccess();
+        // Refresh affected data
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.transactions() }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.profile() }),
+        ]);
 
         // Close dialog box
         onOpenChange(false);
 
         // Notify user
-        toast.success(state.message);
+        toast.success(successMessage);
       }
     })();
-  }, [state, onOpenChange, onSuccess, lastProcessedMessage]);
+  }, [
+    errorMessage,
+    successMessage,
+    onOpenChange,
+    queryClient,
+    lastProcessedMessage,
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,9 +67,9 @@ export default function FundsTransfer({
         </DialogHeader>
 
         {/* Invalid input warning */}
-        {state?.error && isVisible && (
+        {errorMessage && isVisible && (
           <div className="flex text-red-600 text-sm mb-4 bg-red-200 px-3 py-4 rounded-sm justify-between items-center transition-all">
-            <span className="text-base font-semibold">{state.error}</span>
+            <span className="text-base font-semibold">{errorMessage}</span>
             <X
               className="h-5 w-5 cursor-pointer"
               onClick={() => setIsVisible(false)}

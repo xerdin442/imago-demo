@@ -1,6 +1,6 @@
 "use client";
 
-import { PopupProps, User, Wager } from "@/lib/types";
+import { PopupProps, Wager } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
@@ -11,77 +11,62 @@ import Image from "next/image";
 import { getProfile } from "@/app/actions/profile";
 import { formatAmount } from "@/lib/utils";
 import { toast } from "react-toastify";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
-export default function WagerSearch({
-  open,
-  onOpenChange,
-  onSuccess,
-}: PopupProps) {
+export default function WagerSearch({ open, onOpenChange }: PopupProps) {
+  const queryClient = useQueryClient();
   const [inviteCode, setInviteCode] = useState("");
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<Wager | null>(null);
-  const [wagerCreator, setWagerCreator] = useState<User | null>(null);
 
-  const handleSearch = async () => {
+  const searchMutation = useMutation({
+    mutationFn: (code: string) => exploreWagers(code),
+    onSuccess: (result) => {
+      if ("error" in result) {
+        setErrorMsg(result.error);
+        setSearchResult(null);
+      } else {
+        setSearchResult(result);
+      }
+    },
+    onError: () => setErrorMsg("Something went wrong. Please try again."),
+  });
+
+  const creatorQuery = useQuery({
+    queryKey: queryKeys.profile(searchResult?.playerOne),
+    queryFn: () => getProfile(searchResult!.playerOne),
+    enabled: !!searchResult,
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: (wagerId: number) => handleJoinWager(wagerId),
+    onSuccess: async (response) => {
+      if (response.error) {
+        setErrorMsg(response.error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wagers() });
+
+      onOpenChange(false);
+      toast.success(response.message || "Successfully joined wager!");
+
+      setSearchResult(null);
+      setInviteCode("");
+    },
+    onError: () => toast.error("Failed to join wager. Please try again"),
+  });
+
+  const handleSearch = () => {
     if (!inviteCode.trim()) {
       setErrorMsg("Please enter an invite code.");
       return;
     }
 
-    setIsSearchLoading(true);
     setErrorMsg(null);
     setSearchResult(null);
-    setWagerCreator(null);
-
-    try {
-      const result = await exploreWagers(inviteCode);
-
-      if ("error" in result) {
-        setErrorMsg(result.error);
-      } else if ("id" in result) {
-        const creator = await getProfile(result.playerOne);
-
-        setSearchResult(result);
-        setWagerCreator(creator);
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Something went wrong. Please try again.");
-    } finally {
-      setIsSearchLoading(false);
-    }
-
-    return;
-  };
-
-  const processJoinWager = async (wagerId: number) => {
-    try {
-      setIsJoinLoading(true);
-
-      const response = await handleJoinWager(wagerId);
-      if (response.error) {
-        setErrorMsg(response.error);
-        setIsJoinLoading(false);
-        return;
-      }
-
-      // Refresh background data
-      await onSuccess();
-      // Close dialog box
-      onOpenChange(false);
-      // Notify user
-      toast.success(response.message || "Successfully joined wager!");
-
-      setSearchResult(null);
-      setInviteCode("");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to join wager. Please try again");
-    } finally {
-      setIsJoinLoading(false);
-    }
+    searchMutation.mutate(inviteCode);
   };
 
   return (
@@ -114,17 +99,17 @@ export default function WagerSearch({
           />
           <Button
             onClick={handleSearch}
-            disabled={isSearchLoading}
+            disabled={searchMutation.isPending}
             className={`text-lg py-5.75 ${
-              isSearchLoading ? "font-medium" : "font-semibold"
+              searchMutation.isPending ? "font-medium" : "font-semibold"
             }`}
           >
-            {isSearchLoading ? "Searching..." : "Search"}
+            {searchMutation.isPending ? "Searching..." : "Search"}
           </Button>
         </div>
 
         {/* Search Result */}
-        {searchResult && wagerCreator && (
+        {searchResult && creatorQuery.data && (
           <div className="bg-background p-4 pt-6 rounded-base shadow-neo border-2 border-black w-full mx-auto">
             {/* Header */}
             <div className="border-b border-gray-700 pb-3 mb-3">
@@ -146,7 +131,7 @@ export default function WagerSearch({
               <div className="flex items-center space-x-1.5 min-w-0">
                 {/* Creator Profile Image */}
                 <Image
-                  src={wagerCreator.profileImage}
+                  src={creatorQuery.data.profileImage}
                   alt="Wager Creator"
                   width={38}
                   height={38}
@@ -155,7 +140,7 @@ export default function WagerSearch({
 
                 {/* Username */}
                 <span className="font-medium text-sm md:text-[17px]">
-                  {`@${wagerCreator.username}`}
+                  {`@${creatorQuery.data.username}`}
                 </span>
               </div>
 
@@ -167,10 +152,11 @@ export default function WagerSearch({
 
             {/* Join Button */}
             <Button
-              onClick={() => processJoinWager(searchResult.id)}
+              onClick={() => joinMutation.mutate(searchResult.id)}
+              disabled={joinMutation.isPending}
               className="bg-green-600 hover:bg-green-700 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
             >
-              {isJoinLoading ? "Joining..." : "Join Wager"}
+              {joinMutation.isPending ? "Joining..." : "Join Wager"}
             </Button>
           </div>
         )}

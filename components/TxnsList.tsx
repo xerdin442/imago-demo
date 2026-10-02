@@ -42,7 +42,7 @@ export default function TxnsList({ txns }: TxnsListProps) {
                   className={cn(
                     "p-2 rounded-full border-2 border-black",
                     iconBgColor,
-                    iconColor
+                    iconColor,
                   )}
                 >
                   {isDeposit ? (
@@ -81,7 +81,7 @@ export default function TxnsList({ txns }: TxnsListProps) {
               <p
                 className={cn(
                   "font-display text-lg md:text-xl font-bold tracking-wider",
-                  amountColor
+                  amountColor,
                 )}
               >
                 {isDeposit ? "+" : "-"}
@@ -92,7 +92,7 @@ export default function TxnsList({ txns }: TxnsListProps) {
               <p
                 className={cn(
                   "text-[10px] md:text-sm font-black uppercase",
-                  statusColor
+                  statusColor,
                 )}
               >
                 {tx.status}

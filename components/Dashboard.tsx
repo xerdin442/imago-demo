@@ -21,72 +21,73 @@ import WagerList from "./WagersList";
 import { getWagers } from "@/app/actions/wager";
 import FundsTransfer from "./FundsTransfer";
 import WagerSearch from "./WagerSearch";
-import { Wager, Transaction, User } from "@/lib/types";
 import Deposit from "./Deposit";
 import { ToastContainer } from "react-toastify";
 import { useTheme } from "next-themes";
 import Withdraw from "./Withdraw";
 import CreateWager from "./CreateWager";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function Dashboard() {
   const { resolvedTheme } = useTheme();
   const mounted = useClientMounted();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<User>();
-  const [txns, setTxns] = useState<Transaction[]>([]);
-  const [wagers, setWagers] = useState<Wager[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const socialAuth = searchParams.get("socialAuth");
+
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isCreateWagerOpen, setIsCreateWagerOpen] = useState(false);
   const [isWagerSearchOpen, setIsWagerSearchOpen] = useState(false);
 
-  const hasFetched = useRef(false);
-
-  const fetchData = async () => {
-    const socialAuth = searchParams.get("socialAuth");
-
-    try {
-      // Fetch user profile
-      let userData;
-      if (socialAuth) {
-        userData = await handleSocialAuth(socialAuth);
-      } else {
-        userData = await getProfile();
-      }
-
-      setUser(userData);
-
-      // Fetch user's wagers and transactions
-      const txData = await getTransactions();
-      const wagerData = await getWagers();
-
-      setTxns(txData);
-      setWagers(wagerData);
-    } catch (error) {
-      console.error("Dashboard initialization failed", error);
-    }
-  };
+  const socialAuthMutation = useMutation({
+    mutationFn: (identifier: string) => handleSocialAuth(identifier),
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.profile(), user);
+    },
+  });
+  const handledSocialAuth = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!mounted || hasFetched.current) return;
+    if (!mounted || !socialAuth || handledSocialAuth.current === socialAuth) {
+      return;
+    }
 
-    const initializeDashboard = async () => {
-      hasFetched.current = true;
+    handledSocialAuth.current = socialAuth;
+    socialAuthMutation.mutate(socialAuth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, socialAuth]);
 
-      try {
-        setDataLoading(true);
-        await fetchData();
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setDataLoading(false);
-      }
-    };
+  const authReady = !socialAuth || socialAuthMutation.isSuccess;
 
-    initializeDashboard();
-  }, [mounted, searchParams]);
+  const profileQuery = useQuery({
+    queryKey: queryKeys.profile(),
+    queryFn: () => getProfile(),
+    enabled: mounted && authReady,
+  });
+
+  const wagersQuery = useQuery({
+    queryKey: queryKeys.wagers(),
+    queryFn: getWagers,
+    enabled: mounted && authReady,
+  });
+
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.transactions(),
+    queryFn: getTransactions,
+    enabled: mounted && authReady,
+  });
+
+  const user = profileQuery.data;
+  const wagers = wagersQuery.data ?? [];
+  const txns = transactionsQuery.data ?? [];
+  const dataLoading =
+    !authReady ||
+    profileQuery.isLoading ||
+    wagersQuery.isLoading ||
+    transactionsQuery.isLoading;
 
   if (!mounted) return null;
 
@@ -190,11 +191,7 @@ export default function Dashboard() {
                 You currently have no wagers. Create one!
               </p>
             ) : (
-              <WagerList
-                wagers={wagers}
-                currentUserId={user.id}
-                onWagerUpdate={setWagers}
-              />
+              <WagerList wagers={wagers} currentUserId={user.id} />
             )}
           </div>
         </div>
@@ -221,36 +218,25 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <FundsTransfer
-        open={isTransferOpen}
-        onOpenChange={setIsTransferOpen}
-        onSuccess={fetchData}
-      />
+      <FundsTransfer open={isTransferOpen} onOpenChange={setIsTransferOpen} />
 
-      <Deposit
-        open={isDepositOpen}
-        onOpenChange={setIsDepositOpen}
-        onSuccess={fetchData}
-      />
+      <Deposit open={isDepositOpen} onOpenChange={setIsDepositOpen} />
 
       <Withdraw
         open={isWithdrawOpen}
         onOpenChange={setIsWithdrawOpen}
-        onSuccess={fetchData}
         availableBalance={user?.balance as number}
       />
 
       <CreateWager
         open={isCreateWagerOpen}
         onOpenChange={setIsCreateWagerOpen}
-        onSuccess={fetchData}
         availableBalance={user?.balance as number}
       />
 
       <WagerSearch
         open={isWagerSearchOpen}
         onOpenChange={setIsWagerSearchOpen}
-        onSuccess={fetchData}
       />
 
       <ToastContainer autoClose={3000} theme={resolvedTheme} />

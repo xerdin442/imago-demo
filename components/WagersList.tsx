@@ -6,18 +6,20 @@ import { Button } from "./ui/button";
 import { getProfile } from "@/app/actions/profile";
 import { handleWagerClaim } from "@/app/actions/wager";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Wager, User, WagerAction } from "@/lib/types";
+import { useState } from "react";
+import { Wager, WagerAction } from "@/lib/types";
 import { toast } from "react-toastify";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface WagerListProps {
   wagers: Wager[];
   currentUserId: number;
-  onWagerUpdate: Dispatch<SetStateAction<Wager[]>>;
 }
 
-interface WagerActionsProps extends WagerListProps {
+interface WagerActionsProps {
   wager: Wager;
+  currentUserId: number;
 }
 
 interface WagerUserProps {
@@ -27,11 +29,7 @@ interface WagerUserProps {
   reverse?: boolean;
 }
 
-export default function WagerList({
-  wagers,
-  currentUserId,
-  onWagerUpdate,
-}: WagerListProps) {
+export default function WagerList({ wagers, currentUserId }: WagerListProps) {
   return (
     <ul className="w-full space-y-3.5 font-sans">
       {wagers.map((wager) => {
@@ -105,12 +103,7 @@ export default function WagerList({
 
             {/* Action Buttons */}
             <div className="flex items-center justify-center space-x-5 mt-4">
-              <WagerActions
-                wager={wager}
-                currentUserId={currentUserId}
-                onWagerUpdate={onWagerUpdate}
-                wagers={wagers}
-              />
+              <WagerActions wager={wager} currentUserId={currentUserId} />
             </div>
           </li>
         );
@@ -125,29 +118,20 @@ function WagerUser({
   fallbackName = "PLAYER",
   reverse = false,
 }: WagerUserProps) {
-  const [user, setUser] = useState<User | null>(null);
   const defaultImage =
     "https://media.istockphoto.com/id/1393750072/vector/flat-white-icon-man-for-web-design-silhouette-flat-illustration-vector-illustration-stock.jpg?s=612x612&w=0&k=20&c=s9hO4SpyvrDIfELozPpiB_WtzQV9KhoMUP9R9gVohoU=";
 
-  useEffect(() => {
-    if (!userId) return;
-    const fetchUser = async () => {
-      try {
-        const data = await getProfile(userId);
-        setUser(data);
-      } catch (err) {
-        console.error("Failed to fetch wager user details", err);
-      }
-    };
-
-    fetchUser();
-  }, [userId]);
+  const { data: user } = useQuery({
+    queryKey: queryKeys.profile(userId),
+    queryFn: () => getProfile(userId),
+    enabled: !!userId,
+  });
 
   return (
     <div
       className={cn(
         "flex items-center space-x-2 min-w-0",
-        reverse && "flex-row-reverse space-x-reverse text-right"
+        reverse && "flex-row-reverse space-x-reverse text-right",
       )}
     >
       <Image
@@ -156,14 +140,14 @@ function WagerUser({
         height={38}
         className={cn(
           "w-9.5 h-9.5 rounded-full shrink-0 border-2",
-          isWinner ? "border-green-600" : "border-black"
+          isWinner ? "border-green-600" : "border-black",
         )}
         alt="User Profile"
       />
       <span
         className={cn(
           "text-base font-bold truncate",
-          isWinner ? "text-green-600" : "text-black dark:text-white"
+          isWinner ? "text-green-600" : "text-black dark:text-white",
         )}
       >
         {user ? formatUsername(user.username) : fallbackName}
@@ -172,39 +156,46 @@ function WagerUser({
   );
 }
 
-function WagerActions({
-  wager,
-  currentUserId,
-  onWagerUpdate,
-  wagers: prevState,
-}: WagerActionsProps) {
-  const processWagerAction = async (action?: WagerAction) => {
-    // Optimistic UI update
-    onWagerUpdate((prev) =>
-      prev.map((w) => {
-        if (w.id === wager.id) {
+function WagerActions({ wager, currentUserId }: WagerActionsProps) {
+  const queryClient = useQueryClient();
+
+  const claimMutation = useMutation({
+    mutationFn: (action?: WagerAction) => handleWagerClaim(wager.id, action),
+    onMutate: async (action) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.wagers() });
+      const previousWagers = queryClient.getQueryData<Wager[]>(
+        queryKeys.wagers(),
+      );
+
+      // Optimistic UI update
+      queryClient.setQueryData<Wager[]>(queryKeys.wagers(), (prev) =>
+        prev?.map((w) => {
+          if (w.id !== wager.id) return w;
           if (!action) return { ...w, winner: currentUserId };
           if (action === "accept") return { ...w, status: "SETTLED" };
           if (action === "contest") return { ...w, status: "DISPUTE" };
-        }
-        return w;
-      })
-    );
+          return w;
+        }),
+      );
 
-    try {
-      await handleWagerClaim(wager.id, action);
-    } catch (error) {
-      onWagerUpdate(prevState); // Rollback optimistic UI changes if server update fails
+      return { previousWagers };
+    },
+    onError: (_error, action, context) => {
+      // Rollback optimistic UI changes if server update fails
+      if (context?.previousWagers) {
+        queryClient.setQueryData(queryKeys.wagers(), context.previousWagers);
+      }
 
       if (action) {
         toast.error(`Failed to ${action} wager prize claim. Please try again`);
       } else {
         toast.error(`Failed to claim wager prize. Please try again`);
       }
-
-      console.error(error);
-    }
-  };
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.wagers() });
+    },
+  });
 
   if (wager.status === "PENDING") {
     return (
@@ -226,7 +217,7 @@ function WagerActions({
     if (!wager.winner) {
       return (
         <Button
-          onClick={() => processWagerAction()}
+          onClick={() => claimMutation.mutate(undefined)}
           className="bg-green-600 hover:bg-green-700 dark:bg-green-600 text-white text-[17px] py-4.5 font-semibold"
         >
           Claim win!
@@ -238,13 +229,13 @@ function WagerActions({
       return (
         <>
           <Button
-            onClick={() => processWagerAction("accept")}
+            onClick={() => claimMutation.mutate("accept")}
             className="bg-blue-700 hover:bg-blue-700 dark:bg-blue-700 text-white text-[17px] py-4.5 font-semibold"
           >
             Accept
           </Button>
           <Button
-            onClick={() => processWagerAction("contest")}
+            onClick={() => claimMutation.mutate("contest")}
             variant="destructive"
             className="text-[17px] py-4.5 font-semibold dark:bg-red-700"
           >

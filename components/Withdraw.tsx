@@ -2,7 +2,7 @@
 
 import { MoveLeft, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Network, PopupProps, TransactionInfo } from "@/lib/types";
+import { Network, PopupProps, TransactionInfo, isApiError } from "@/lib/types";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -12,6 +12,8 @@ import NetworkSelect from "./NetworkSelect";
 import { formatAmount } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface ConfirmWithdrawProps extends PopupProps {
   data: TransactionInfo;
@@ -22,7 +24,6 @@ interface ConfirmWithdrawProps extends PopupProps {
 export default function Withdraw({
   open,
   onOpenChange,
-  onSuccess,
   availableBalance,
 }: PopupProps & { availableBalance: number }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export default function Withdraw({
               <Label className="text-lg ml-0.5 font-semibold">Network</Label>
               <NetworkSelect
                 disabled={false}
-                selectedNetwork={withdrawalInfo.chain}
+                defaultValue={withdrawalInfo.chain}
               />
             </div>
 
@@ -150,7 +151,6 @@ export default function Withdraw({
       <ConfirmWithdraw
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        onSuccess={onSuccess}
         data={withdrawalInfo}
         onReturn={returnToWithdrawalForm}
         onComplete={resetFormState}
@@ -162,26 +162,24 @@ export default function Withdraw({
 function ConfirmWithdraw({
   open,
   onOpenChange,
-  onSuccess,
   data,
   onReturn,
   onComplete,
 }: ConfirmWithdrawProps) {
-  const [isConfirming, setIsConfirming] = useState(false);
+  const queryClient = useQueryClient();
 
-  const confirmWithdrawal = async () => {
-    setIsConfirming(true);
-
-    try {
-      // Initiate withdrawal
-      const response = await processTransaction(data, "withdraw");
-      if (response && "error" in response) {
+  const withdrawMutation = useMutation({
+    mutationFn: () => processTransaction(data, "withdraw"),
+    onSuccess: async (response) => {
+      if (isApiError(response)) {
         onReturn(response.error);
         return;
       }
 
-      // Refresh background data
-      await onSuccess();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.profile() }),
+      ]);
 
       // Reset withdrawal form state
       onComplete();
@@ -191,15 +189,14 @@ function ConfirmWithdraw({
 
       // Notify user
       toast.success(
-        `Your withdrawal of ${formatAmount(data.amount!)} is being processed`
+        `Your withdrawal of ${formatAmount(data.amount!)} is being processed`,
       );
-    } catch (error) {
+    },
+    onError: (error) => {
       onReturn("An unknown error occured. Please try again");
       console.error(error);
-    } finally {
-      setIsConfirming(false);
-    }
-  };
+    },
+  });
 
   const formatRecipient = (recipient?: string): string => {
     if (recipient?.endsWith(".sol") || recipient?.endsWith(".eth")) {
@@ -269,11 +266,11 @@ function ConfirmWithdraw({
 
         {/* Confirm Button */}
         <Button
-          onClick={confirmWithdrawal}
-          disabled={isConfirming}
+          onClick={() => withdrawMutation.mutate()}
+          disabled={withdrawMutation.isPending}
           className="w-full text-xl py-6 font-semibold"
         >
-          {isConfirming ? "Processing..." : "Withdraw"}
+          {withdrawMutation.isPending ? "Processing..." : "Withdraw"}
         </Button>
       </DialogContent>
     </Dialog>

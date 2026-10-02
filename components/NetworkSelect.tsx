@@ -1,6 +1,5 @@
 "use client";
 
-import { useAppKitAccount, useDisconnect } from "@reown/appkit/react";
 import {
   Select,
   SelectTrigger,
@@ -11,42 +10,30 @@ import {
   SelectGroup,
 } from "./ui/select";
 import Image from "next/image";
-import { ChainNamespace } from "@reown/appkit/networks";
-import { toast } from "react-toastify";
 import { Network } from "@/lib/types";
 
 interface NetworkSelectProps {
-  namespace?: ChainNamespace;
-  disabled: boolean;
-  selectedNetwork?: Network;
+  disabled?: boolean;
+  value?: Network;
+  defaultValue?: Network;
+  onValueChange?: (value: Network) => void;
 }
 
 const networks: Network[] = ["BASE", "SOLANA"];
 
 export default function NetworkSelect({
-  namespace,
   disabled,
-  selectedNetwork,
+  value,
+  defaultValue,
+  onValueChange,
 }: NetworkSelectProps) {
-  const { isConnected } = useAppKitAccount();
-  const { disconnect } = useDisconnect();
-
-  const disconnectWallet = async () => {
-    try {
-      if (isConnected) await disconnect({ namespace });
-    } catch (error) {
-      toast.error("An error occured while switching networks");
-      console.error(error);
-    }
-  };
-
   return (
     <Select
       disabled={disabled}
       name="network"
-      defaultValue={selectedNetwork}
       required
-      {...(namespace && { onValueChange: disconnectWallet })}
+      onValueChange={onValueChange as (value: string) => void}
+      {...(value !== undefined ? { value } : { defaultValue })}
     >
       <SelectTrigger className="w-full dark:text-gray-800">
         <SelectValue placeholder="Select network" />
@@ -67,7 +54,7 @@ export default function NetworkSelect({
                   height={network === "SOLANA" ? 316 : 500}
                   className="w-6 h-6 rounded-full border-2 border-black bg-white"
                 />
-                <span className="font-medium text-[17px]">{network}</span>
+                <span className="font-medium text-[1.0625rem]">{network}</span>
               </div>
             </SelectItem>
           ))}

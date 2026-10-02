@@ -1,6 +1,6 @@
 "use client";
 
-import { TransactionInfo, Network, PopupProps } from "@/lib/types";
+import { TransactionInfo, Network, PopupProps, isApiError } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -9,6 +9,7 @@ import {
   useAppKit,
   useAppKitAccount,
   useAppKitProvider,
+  useDisconnect,
 } from "@reown/appkit/react";
 import { X } from "lucide-react";
 import { useState } from "react";
@@ -19,6 +20,8 @@ import {
   readContract,
   writeContract,
   waitForTransactionReceipt,
+  getChainId,
+  switchChain,
 } from "@wagmi/core";
 import { parseUnits } from "viem";
 import { ERC20_ABI, formatAmount, getUsdcAddress } from "@/lib/utils";
@@ -30,24 +33,226 @@ import {
 } from "@solana/spl-token";
 import type { Provider as SolanaProvider } from "@reown/appkit-adapter-solana";
 import NetworkSelect from "./NetworkSelect";
-import { wagmiAdapter } from "@/appkit/config";
+import { baseNetworks, wagmiAdapter } from "@/appkit/config";
+import { env } from "@/lib/env";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
-export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
+export default function Deposit({ open, onOpenChange }: PopupProps) {
+  const queryClient = useQueryClient();
   const [depositAmount, setDepositAmount] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [chainNamespace, setChainNameSpace] = useState<ChainNamespace>();
+  const [network, setNetwork] = useState<Network>();
   const [txStatus, setTxStatus] = useState<
     "idle" | "processing" | "sending" | "confirming"
   >("idle");
-  const [isPending, setIsPending] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const chainNamespace: ChainNamespace | undefined = network
+    ? network === "BASE"
+      ? "eip155"
+      : "solana"
+    : undefined;
 
   const { open: openAppkit } = useAppKit();
+  const { disconnect } = useDisconnect();
   const { isConnected, address, caipAddress } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider(chainNamespace || "eip155");
 
+  const handleNetworkChange = async (value: Network) => {
+    const nextNamespace: ChainNamespace =
+      value === "BASE" ? "eip155" : "solana";
+
+    if (isConnected && chainNamespace && chainNamespace !== nextNamespace) {
+      try {
+        await disconnect({ namespace: chainNamespace });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    setNetwork(value);
+  };
+
+  const depositMutation = useMutation({
+    mutationFn: async () => {
+      if (!network) throw new Error("Please select a network");
+
+      if (!depositAmount || Number(depositAmount.trim()) <= 0) {
+        throw new Error("Please enter a valid amount");
+      }
+
+      const usdcAddress = getUsdcAddress(caipAddress as string);
+      if (!usdcAddress) {
+        throw new Error(
+          "Unsupported network for the connected wallet. Please reconnect on the selected network.",
+        );
+      }
+
+      const depositInfo: TransactionInfo = {
+        chain: network,
+        amount: Number(depositAmount),
+        depositor: address,
+      };
+
+      setTxStatus("processing");
+
+      if (network === "BASE") {
+        const config = wagmiAdapter.wagmiConfig;
+        const expectedChainId = Number(baseNetworks[0].id);
+
+        const currentChainId = getChainId(config);
+        if (currentChainId !== expectedChainId) {
+          await switchChain(config, { chainId: expectedChainId });
+        }
+
+        const [balance, decimals] = await Promise.all([
+          readContract(config, {
+            address: usdcAddress as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: "balanceOf",
+            args: [address as `0x${string}`],
+          }),
+          readContract(config, {
+            address: usdcAddress as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: "decimals",
+          }),
+        ]);
+
+        const transferAmount = parseUnits(depositAmount.toString(), decimals);
+        if (balance < transferAmount) {
+          throw new Error("Insufficient USDC balance");
+        }
+
+        setTxStatus("sending");
+        const hash = await writeContract(config, {
+          address: usdcAddress as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "transfer",
+          args: [
+            env.basePlatformWalletAddress as `0x${string}`,
+            transferAmount,
+          ],
+        });
+
+        const receipt = await waitForTransactionReceipt(config, {
+          hash,
+          confirmations: 1,
+        });
+
+        if (receipt.status !== "success") {
+          throw new Error("Deposit transaction failed!");
+        }
+
+        setTxStatus("confirming");
+        const result = await processTransaction(
+          { ...depositInfo, txIdentifier: hash },
+          "deposit",
+        );
+        if (isApiError(result)) throw new Error(result.error);
+      } else {
+        const connection = new Connection(env.solanaRpcUrl, "confirmed");
+        const provider = walletProvider as SolanaProvider;
+        const senderPublicKey = new PublicKey(address as string);
+        const platformPublicKey = new PublicKey(
+          env.solanaPlatformWalletAddress,
+        );
+        const usdcMintAddress = new PublicKey(usdcAddress);
+
+        const senderATA = await getAssociatedTokenAddress(
+          usdcMintAddress,
+          senderPublicKey,
+        );
+        const platformATA = await getAssociatedTokenAddress(
+          usdcMintAddress,
+          platformPublicKey,
+        );
+
+        const balance = await connection.getTokenAccountBalance(senderATA);
+        if (balance.value.uiAmount! < Number(depositAmount)) {
+          throw new Error("Insufficient USDC balance");
+        }
+
+        const transaction = new Transaction().add(
+          createTransferInstruction(
+            senderATA,
+            platformATA,
+            senderPublicKey,
+            Number(depositAmount) * Math.pow(10, balance.value.decimals),
+            [],
+            TOKEN_PROGRAM_ID,
+          ),
+        );
+
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = senderPublicKey;
+
+        setTxStatus("sending");
+        const signedTxn = await provider.signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(
+          signedTxn.serialize(),
+        );
+
+        const confirmation = await connection.confirmTransaction(
+          { signature, blockhash, lastValidBlockHeight },
+          "confirmed",
+        );
+
+        if (confirmation.value.err) {
+          throw new Error("Deposit transaction failed!");
+        }
+
+        setTxStatus("confirming");
+        const result = await processTransaction(
+          { ...depositInfo, txIdentifier: signature },
+          "deposit",
+        );
+        if (isApiError(result)) throw new Error(result.error);
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.profile() }),
+      ]);
+
+      onOpenChange(false);
+
+      toast.success(
+        `Your deposit of ${formatAmount(
+          parseFloat(depositAmount),
+        )} is being processed.`,
+      );
+
+      if (chainNamespace) {
+        try {
+          await disconnect({ namespace: chainNamespace });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      setErrorMsg(null);
+      setDepositAmount("");
+      setTxStatus("idle");
+    },
+    onError: (error: Error) => {
+      setErrorMsg(
+        error.message || "An unknown error occured. Please try again",
+      );
+      setTxStatus("idle");
+      console.error(error);
+    },
+  });
+
+  const isPending = isConnecting || depositMutation.isPending;
+
   const getButtonLabel = () => {
     if (!isConnected) {
-      return isPending ? "Connecting..." : "Connect Wallet";
+      return isConnecting ? "Connecting..." : "Connect Wallet";
     }
 
     switch (txStatus) {
@@ -62,231 +267,31 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
     }
   };
 
-  const handleDpositForm = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDepositForm = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const data = new FormData(e.currentTarget);
-    const network = data.get("network") as unknown as Network;
-
-    const selectedNamespace: ChainNamespace =
-      network === "BASE" ? "eip155" : "solana";
-    setChainNameSpace(selectedNamespace);
+    if (!network) {
+      setErrorMsg("Please select a network");
+      return;
+    }
 
     // Initiate wallet connection if user is not connected
-    setIsPending(true);
     if (!isConnected) {
+      setIsConnecting(true);
+
       try {
-        await openAppkit({
-          namespace: selectedNamespace,
-          view: "Connect",
-        });
+        await openAppkit({ namespace: chainNamespace, view: "Connect" });
       } catch (error) {
         toast.error("Wallet connection error");
         console.error(error);
       } finally {
-        setIsPending(false);
+        setIsConnecting(false);
       }
 
       return;
     }
 
-    setTxStatus("processing");
-
-    if (!depositAmount || Number(depositAmount.trim()) <= 0) {
-      setErrorMsg("Please enter a valid amount");
-      setTxStatus("idle");
-      setIsPending(false);
-
-      return;
-    }
-
-    const usdcAddress = getUsdcAddress(caipAddress as string);
-    const depositInfo: TransactionInfo = {
-      chain: network,
-      amount: Number(depositAmount),
-      depositor: data.get("address") as string,
-    };
-
-    if (network == "BASE") {
-      // Initialize Wagmi adapter
-      const config = wagmiAdapter.wagmiConfig;
-
-      try {
-        // Fetch the user's USDC balance and token decimals
-        const [balance, decimals] = await Promise.all([
-          readContract(config, {
-            address: usdcAddress as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: "balanceOf",
-            args: [address as `0x${string}`],
-          }),
-
-          readContract(config, {
-            address: usdcAddress as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: "decimals",
-          }),
-        ]);
-
-        // Convert deposit amount to smallest unit of USDC
-        const transferAmount = parseUnits(depositAmount.toString(), decimals);
-
-        // Verify that the user has sufficient balance
-        if (balance < transferAmount) {
-          setErrorMsg("Insufficient USDC balance");
-          setTxStatus("idle");
-          setIsPending(false);
-
-          return;
-        }
-
-        // Initiate transfer of deposit amount from user wallet
-        setTxStatus("sending");
-        const platformAddress = process.env
-          .NEXT_PUBLIC_BASE_PLATFORM_WALLET_ADDRESS! as `0x${string}`;
-
-        const hash = await writeContract(config, {
-          address: usdcAddress as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: "transfer",
-          args: [platformAddress, transferAmount],
-        });
-
-        // Wait for confirmation of transaction
-        const receipt = await waitForTransactionReceipt(config, {
-          hash,
-          confirmations: 1,
-        });
-
-        if (receipt.status === "success") {
-          // Process deposit info
-          setTxStatus("confirming");
-          await processTransaction(
-            { ...depositInfo, txIdentifier: hash },
-            "deposit"
-          );
-        } else {
-          toast.error("Deposit transaction failed!");
-        }
-      } catch (error) {
-        setErrorMsg("An unknown error occured. Please try again");
-        setTxStatus("idle");
-        setIsPending(false);
-
-        console.error(error);
-        return;
-      }
-    } else {
-      const rpcUrl =
-        process.env.NEXT_PUBLIC_WALLET_CONNECTION_MODE === "testnet"
-          ? "https://api.devnet.solana.com"
-          : "https://api.mainnet-beta.solana.com";
-
-      try {
-        // Initialize connection to network
-        const connection = new Connection(rpcUrl, "confirmed");
-        const provider = walletProvider as SolanaProvider;
-        const senderPublicKey = new PublicKey(address as string);
-        const platformPublicKey = new PublicKey(
-          process.env.NEXT_PUBLIC_SOLANA_PLATFORM_WALLET_ADDRESS!
-        );
-        const usdcMintAddress = new PublicKey(usdcAddress);
-
-        // Get Associated Token Accounts for the depositor and platform addresses
-        const senderATA = await getAssociatedTokenAddress(
-          usdcMintAddress,
-          senderPublicKey
-        );
-        const platformATA = await getAssociatedTokenAddress(
-          usdcMintAddress,
-          platformPublicKey
-        );
-
-        // Verify that the user has sufficient balance
-        const balance = await connection.getTokenAccountBalance(senderATA);
-        if (balance.value.uiAmount! < Number(depositAmount)) {
-          setErrorMsg("Insufficient USDC balance");
-          setTxStatus("idle");
-          setIsPending(false);
-
-          return;
-        }
-
-        // Create transaction and configure transfer instruction
-        const transaction = new Transaction().add(
-          createTransferInstruction(
-            senderATA,
-            platformATA,
-            senderPublicKey,
-            Number(depositAmount) * Math.pow(10, balance.value.decimals),
-            [],
-            TOKEN_PROGRAM_ID
-          )
-        );
-
-        // Retrieve latest blockhash from the network
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = senderPublicKey;
-
-        // Initiate transfer of deposit amount from user wallet
-        setTxStatus("sending");
-        const signedTxn = await provider.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(
-          signedTxn.serialize()
-        );
-
-        // Wait for confirmation of transaction
-        const confirmation = await connection.confirmTransaction(
-          {
-            signature,
-            blockhash,
-            lastValidBlockHeight,
-          },
-          "confirmed"
-        );
-
-        if (!confirmation.value.err) {
-          // Process deposit info
-          setTxStatus("confirming");
-          await processTransaction(
-            { ...depositInfo, txIdentifier: signature },
-            "deposit"
-          );
-        } else {
-          toast.error("Deposit transaction failed!");
-        }
-      } catch (error) {
-        setErrorMsg("An unknown error occured. Please try again");
-        setTxStatus("idle");
-        setIsPending(false);
-
-        console.error(error);
-        return;
-      }
-    }
-
-    // Refresh background data
-    await onSuccess();
-
-    // Close dialog box
-    onOpenChange(false);
-
-    // Notify user
-    toast.success(
-      `Your deposit of ${formatAmount(
-        parseFloat(depositAmount)
-      )} is being processed.`
-    );
-
-    // Reset popup state
-    setErrorMsg(null);
-    setIsPending(false);
-    setTxStatus("idle");
-    setDepositAmount("");
-
-    return;
+    depositMutation.mutate();
   };
 
   return (
@@ -313,11 +318,15 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
           </div>
         )}
 
-        <form onSubmit={handleDpositForm} className="space-y-5">
+        <form onSubmit={handleDepositForm} className="space-y-5">
           {/* Network select */}
           <div className="space-y-1.5">
             <Label className="text-lg ml-0.5 font-semibold">Network</Label>
-            <NetworkSelect disabled={isPending} namespace={chainNamespace} />
+            <NetworkSelect
+              disabled={isPending}
+              value={network}
+              onValueChange={handleNetworkChange}
+            />
           </div>
 
           {/* Amount input */}
@@ -343,15 +352,8 @@ export default function Deposit({ open, onOpenChange, onSuccess }: PopupProps) {
               <p className="font-semibold">Connected Wallet:</p>
               <p className="font-bold text-primary">{`${address.slice(
                 0,
-                7
+                7,
               )}****${address.slice(-4)}`}</p>
-
-              <Input
-                type="text"
-                name="address"
-                value={address}
-                className="hidden"
-              />
             </div>
           )}
 

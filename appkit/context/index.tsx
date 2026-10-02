@@ -1,7 +1,7 @@
 "use client";
 
 import { createAppKit, ThemeMode } from "@reown/appkit/react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   solanaWeb3JsAdapter,
   projectId,
@@ -12,28 +12,34 @@ import {
 import { WagmiProvider, cookieToInitialState, type Config } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-
-const queryClient = new QueryClient();
-
-const appDomain = process.env.NEXT_PUBLIC_APPKIT_DOMAIN;
-if (!appDomain) throw new Error("Appkit Domain is not defined");
+import { env } from "@/lib/env";
 
 const metadata = {
   name: "Imago",
   description: "Wagering application for anyone, anywhere.",
-  url: appDomain,
+  url: env.appkitDomain,
   icons: [
     "https://res.cloudinary.com/ddloc28y9/image/upload/v1756179790/imago-logo_s4lurp.png",
   ],
 };
 
-// Create the modal
+function getInitialThemeMode(): ThemeMode {
+  if (typeof window === "undefined") return "light";
+
+  const stored = window.localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
 export const modal = createAppKit({
   adapters: [solanaWeb3JsAdapter, wagmiAdapter],
   projectId,
   networks: [...baseNetworks, ...solanaNetworks],
   metadata,
-  themeMode: "light",
+  themeMode: getInitialThemeMode(),
   enableReconnect: false,
   features: {
     analytics: true,
@@ -57,8 +63,21 @@ function ContextProvider({
     cookies
   );
 
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            refetchOnWindowFocus: true,
+            retry: 1,
+          },
+        },
+      })
+  );
+
   useEffect(() => {
-    modal.setThemeMode(resolvedTheme as ThemeMode);
+    if (resolvedTheme) modal.setThemeMode(resolvedTheme as ThemeMode);
   }, [resolvedTheme]);
 
   return (

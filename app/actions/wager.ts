@@ -1,190 +1,58 @@
-"use server"
+"use server";
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"
 import { Wager, WagerAction } from "@/lib/types";
+import { apiAction, apiFetchOrRedirect, isApiError } from "@/lib/api";
 
 export async function getWagers(): Promise<Wager[]> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  const { wagers } = await apiFetchOrRedirect<{ wagers: Wager[] }>(
+    "/user/wagers",
+  );
 
-  if (!token) {
-    redirect("/");
-  }
-
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/user/wagers`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (response.status === 401) {
-      cookieStore.delete("token");
-      redirect("/");
-    }
-
-    return data.wagers as Wager[]
-  } catch (error) {
-    console.error("Wagers fetch error:", error);
-    redirect("/");
-  }
+  return wagers;
 }
 
 export async function createWager(prevState: unknown, formData: FormData) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  const result = await apiAction("/wagers/create", {
+    method: "POST",
+    body: {
+      title: formData.get("title"),
+      stake: Number(formData.get("stake")),
+      category: formData.get("category"),
+      conditions: formData.get("conditions"),
+    },
+  });
 
-  if (!token) {
-    redirect("/");
-  }
+  if (isApiError(result)) return result;
 
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title: formData.get("title"),
-        stake: Number(formData.get("stake")),
-        category: formData.get("category"),
-        conditions: formData.get("conditions"),
-      })
-    });
-
-    const data = await response.json();
-
-    if (response.status === 401) {
-      cookieStore.delete("token");
-      redirect("/");
-    }
-
-    if (response.status === 400) {
-      const errorMsg = typeof data.message === "string"
-        ? data.message
-        : data.message[0].charAt(0).toUpperCase() + data.message[0].slice(1);
-
-      return { error: errorMsg };
-    };
-
-    revalidatePath("/home");
-
-    return { message: "Wager created successfully!" };
-  } catch (error) {
-    console.error("Create wager error:", error);
-    return { error: "An unknow error occured. Please try again" };
-  }
+  return { message: "Wager created successfully!" };
 }
 
-export async function handleWagerClaim(wagerId: number, action?: WagerAction): Promise<void> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-
-  if (!token) {
-    redirect("/");
-  }
-
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/${wagerId}/claim/${action || ""}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 401) {
-      cookieStore.delete("token");
-      redirect("/");
-    }
-
-    if (!response.ok) redirect("/");
-
-    revalidatePath("/home");
-
-    return;
-  } catch (error) {
-    console.error("Wager prize claim error:", error);
-    redirect("/");
-  }
+export async function handleWagerClaim(
+  wagerId: number,
+  action?: WagerAction,
+): Promise<void> {
+  await apiFetchOrRedirect(`/wagers/${wagerId}/claim/${action || ""}`, {
+    method: "POST",
+  });
 }
 
-export async function exploreWagers(inviteCode: string): Promise<Wager | { error: string }> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+export async function exploreWagers(
+  inviteCode: string,
+): Promise<Wager | { error: string }> {
+  const result = await apiAction<{ wager: Wager }>("/wagers/invite", {
+    method: "POST",
+    body: { inviteCode },
+  });
 
-  if (!token) {
-    redirect("/");
-  }
+  if (isApiError(result)) return result;
 
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/invite`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ inviteCode })
-    });
-
-    const data = await response.json();
-
-    if (response.status === 401) {
-      cookieStore.delete("token");
-      redirect("/");
-    }
-
-    if (!response.ok) {
-      return { error: data.message };
-    };
-
-    return data.wager;
-  } catch (error) {
-    console.error("Wager search error:", error);
-    redirect("/");
-  }
+  return result.wager;
 }
 
-export async function handleJoinWager(wagerId: number): Promise<{ error?: string; message?: string }> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-
-  if (!token) {
-    redirect("/");
-  }
-
-  try {
-    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/${wagerId}/join`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (response.status === 401) {
-      cookieStore.delete("token");
-      redirect("/");
-    }
-
-    if (!response.ok) {
-      return { error: data.message };
-    };
-
-    revalidatePath("/home");
-
-    return { message: data.message };
-  } catch (error) {
-    console.error("Join wager error:", error);
-    redirect("/");
-  }
+export async function handleJoinWager(
+  wagerId: number,
+): Promise<{ error?: string; message?: string }> {
+  return apiAction<{ message: string }>(`/wagers/${wagerId}/join`, {
+    method: "POST",
+  });
 }
