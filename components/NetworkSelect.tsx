@@ -57,8 +57,8 @@ export default function NetworkSelect({
             Networks
           </SelectLabel>
 
-          {networks.map((network) => (
-            <SelectItem key={network} value={network}>
+          {networks.map((network, index) => (
+            <SelectItem key={index} value={network}>
               <div className="flex items-center space-x-2">
                 <Image
                   src={`/${network.toLowerCase()}-logo.png`}

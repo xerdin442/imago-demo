@@ -20,6 +20,9 @@ export default function FundsTransfer({
     processFundsTransfer,
     null
   );
+  const [lastProcessedMessage, setLastProcessedMessage] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     (async () => {
@@ -27,16 +30,21 @@ export default function FundsTransfer({
         setIsVisible(true);
       }
 
-      if (state?.message) {
+      if (state?.message && state.message !== lastProcessedMessage) {
+        // Mark as processed
+        setLastProcessedMessage(state.message);
+
         // Refresh background data
         await onSuccess();
+
         // Close dialog box
         onOpenChange(false);
+
         // Notify user
         toast.success(state.message);
       }
     })();
-  }, [state, onOpenChange, onSuccess]);
+  }, [state, onOpenChange, onSuccess, lastProcessedMessage]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -26,6 +26,7 @@ import Deposit from "./Deposit";
 import { ToastContainer } from "react-toastify";
 import { useTheme } from "next-themes";
 import Withdraw from "./Withdraw";
+import CreateWager from "./CreateWager";
 
 export default function Dashboard() {
   const { resolvedTheme } = useTheme();
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isCreateWagerOpen, setIsCreateWagerOpen] = useState(false);
   const [isWagerSearchOpen, setIsWagerSearchOpen] = useState(false);
 
   const hasFetched = useRef(false);
@@ -149,7 +151,10 @@ export default function Dashboard() {
 
               <div className="flex items-center justify-center space-x-4">
                 {/* Create Wager Btn */}
-                <Button onClick={() => {}} className="py-5.5">
+                <Button
+                  onClick={() => setIsCreateWagerOpen(true)}
+                  className="py-5.5"
+                >
                   <PlusIcon
                     size={30}
                     strokeWidth={2.5}
@@ -231,6 +236,13 @@ export default function Dashboard() {
       <Withdraw
         open={isWithdrawOpen}
         onOpenChange={setIsWithdrawOpen}
+        onSuccess={fetchData}
+        availableBalance={user?.balance as number}
+      />
+
+      <CreateWager
+        open={isCreateWagerOpen}
+        onOpenChange={setIsCreateWagerOpen}
         onSuccess={fetchData}
         availableBalance={user?.balance as number}
       />

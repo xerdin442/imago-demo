@@ -36,6 +36,53 @@ export async function getWagers(): Promise<Wager[]> {
   }
 }
 
+export async function createWager(prevState: unknown, formData: FormData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    redirect("/");
+  }
+
+  try {
+    const response = await fetch(`${process.env.BACKEND_API_URL}/wagers/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: formData.get("title"),
+        stake: Number(formData.get("stake")),
+        category: formData.get("category"),
+        conditions: formData.get("conditions"),
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      cookieStore.delete("token");
+      redirect("/");
+    }
+
+    if (response.status === 400) {
+      const errorMsg = typeof data.message === "string"
+        ? data.message
+        : data.message[0].charAt(0).toUpperCase() + data.message[0].slice(1);
+
+      return { error: errorMsg };
+    };
+
+    revalidatePath("/home");
+
+    return { message: "Wager created successfully!" };
+  } catch (error) {
+    console.error("Create wager error:", error);
+    return { error: "An unknow error occured. Please try again" };
+  }
+}
+
 export async function handleWagerClaim(wagerId: number, action?: WagerAction): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;

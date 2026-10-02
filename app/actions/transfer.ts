@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 export async function processFundsTransfer(prevState: unknown, formData: FormData) {
   const username = formData.get("username")
-  const amount = formData.get("amount")
+  const amount = Number(formData.get("amount"))
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
