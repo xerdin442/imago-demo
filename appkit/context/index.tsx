@@ -34,6 +34,7 @@ export const modal = createAppKit({
   networks: [...baseNetworks, ...solanaNetworks],
   metadata,
   themeMode: "light",
+  enableReconnect: false,
   features: {
     analytics: true,
   },
