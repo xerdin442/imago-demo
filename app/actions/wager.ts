@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache"
 
 export interface Wager {
   id: number;
@@ -69,6 +70,8 @@ export async function handleWagerClaim(wagerId: number, action?: 'accept' | 'con
     }
 
     if (!response.ok) redirect("/");
+
+    revalidatePath("/home");
 
     return;
   } catch (error) {

@@ -7,6 +7,7 @@ import { getProfile, User } from "@/app/actions/profile";
 import { handleWagerClaim, Wager } from "@/app/actions/wager";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface WagerListProps {
   wagers: Wager[];
@@ -163,11 +164,14 @@ function WagerUser({
 
 function WagerActions({ wager, currentUserId }: WagerActionsProps) {
   const [wagerClaim, setWagerClaim] = useState(false);
+  const router = useRouter();
 
-  const processWagerAction = (action?: "accept" | "contest") => {
+  const processWagerAction = async (action?: "accept" | "contest") => {
     try {
       setWagerClaim(true);
-      handleWagerClaim(wager.id, action);
+      await handleWagerClaim(wager.id, action);
+      
+      router.refresh();
     } catch (error) {
       console.error(error);
     } finally {
