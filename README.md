@@ -1,1 +1,1 @@
-# wager-app-react
+# Wager App Demo
