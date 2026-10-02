@@ -58,10 +58,7 @@ function ContextProvider({
   );
 
   useEffect(() => {
-    const currentTheme = (
-      resolvedTheme === "dark" ? "dark" : "light"
-    ) as ThemeMode;
-    modal.setThemeMode(currentTheme);
+    modal.setThemeMode(resolvedTheme as ThemeMode);
   }, [resolvedTheme]);
 
   return (

@@ -8,6 +8,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { PopupProps } from "@/lib/types";
+import { ToastContainer, toast } from "react-toastify";
+import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 
 export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -16,6 +19,9 @@ export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
     null
   );
 
+  const router = useRouter();
+  const { resolvedTheme } = useTheme();
+
   useEffect(() => {
     (() => {
       if (state?.error) {
@@ -23,71 +29,83 @@ export default function FundsTransfer({ open, onOpenChange }: PopupProps) {
       }
 
       if (state?.message) {
+        // Refresh background data
+        router.refresh();
+        // Close dialog box
         onOpenChange(false);
+        // Notify user
+        toast.success(state.message);
       }
     })();
-  }, [state, onOpenChange]);
+  }, [router, state, onOpenChange]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] bg-secondary-background border-2 border-black rounded-base px-5 py-8 w-11/12 md:max-w-102.5 gap-0 font-sans">
-        <DialogHeader>
-          <DialogTitle className="text-3xl font-bold mb-5 mt-3 text-center">
-            Transfer
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] bg-secondary-background border-2 border-black rounded-base px-5 py-8 w-11/12 md:max-w-102.5 gap-0 font-sans">
+          <DialogHeader>
+            <DialogTitle className="text-3xl font-bold mb-5 mt-3 text-center">
+              Transfer
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* Invalid input warning */}
-        {state?.error && isVisible && (
-          <div className="flex text-red-600 text-sm mb-4 bg-red-200 px-3 py-4 rounded-sm justify-between items-center transition-all">
-            <span className="text-base font-semibold">{state.error}</span>
-            <X
-              className="h-5 w-5 cursor-pointer"
-              onClick={() => setIsVisible(false)}
-            />
-          </div>
-        )}
+          {/* Invalid input warning */}
+          {state?.error && isVisible && (
+            <div className="flex text-red-600 text-sm mb-4 bg-red-200 px-3 py-4 rounded-sm justify-between items-center transition-all">
+              <span className="text-base font-semibold">{state.error}</span>
+              <X
+                className="h-5 w-5 cursor-pointer"
+                onClick={() => setIsVisible(false)}
+              />
+            </div>
+          )}
 
-        <form action={formAction} className="space-y-5">
-          {/* Username input */}
-          <div className="space-y-1.5">
-            <Label htmlFor="username" className="text-lg ml-0.5 font-semibold">
-              Username
-            </Label>
-            <Input
-              type="text"
-              id="username"
-              name="username"
-              required
-              placeholder="Enter recipient username"
-            />
-          </div>
+          <form action={formAction} className="space-y-5">
+            {/* Username input */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="username"
+                className="text-lg ml-0.5 font-semibold"
+              >
+                Username
+              </Label>
+              <Input
+                type="text"
+                id="username"
+                name="username"
+                required
+                placeholder="Enter recipient username"
+              />
+            </div>
 
-          {/* Amount input */}
-          <div className="space-y-1.5">
-            <Label htmlFor="amount" className="text-lg ml-0.5 font-semibold">
-              Amount
-            </Label>
-            <Input
-              type="number"
-              id="amount"
-              name="amount"
-              placeholder="Enter amount"
-              required
-              min={0}
-            />
-          </div>
+            {/* Amount input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="amount" className="text-lg ml-0.5 font-semibold">
+                Amount
+              </Label>
+              <Input
+                type="number"
+                id="amount"
+                name="amount"
+                placeholder="Enter amount"
+                required
+                min={0}
+              />
+            </div>
 
-          {/* Complete Transfer Button */}
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="w-full mt-2 text-xl py-6 font-semibold"
-          >
-            {isPending ? "Processing..." : "Complete Transfer"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* Complete Transfer Button */}
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="w-full mt-2 text-xl py-6 font-semibold"
+            >
+              {isPending ? "Processing..." : "Complete Transfer"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ToastContainer autoClose={2500} theme={resolvedTheme} />
+    </>
   );
 }

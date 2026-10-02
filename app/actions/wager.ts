@@ -105,7 +105,7 @@ export async function exploreWagers(inviteCode: string): Promise<Wager | { error
   }
 }
 
-export async function handleJoinWager(wagerId: number): Promise<string | null> {
+export async function handleJoinWager(wagerId: number): Promise<{ error?: string; message?: string }> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -130,12 +130,12 @@ export async function handleJoinWager(wagerId: number): Promise<string | null> {
     }
 
     if (!response.ok) {
-      return data.message as string;
+      return { error: data.message };
     };
 
     revalidatePath("/home");
 
-    return null;
+    return { message: data.message };
   } catch (error) {
     console.error("Join wager error:", error);
     redirect("/");
