@@ -22,7 +22,7 @@ export default function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-primary flex items-center justify-between px-6 py-2 lg:px-8 w-full border-b-4 border-t-[1.5px] mb-4">
+    <nav className="bg-primary flex items-center justify-between px-5 py-2 lg:pl-6 w-full border-b-4 border-t-[1.5px] mb-4">
       {/* Logo */}
       <div className="shrink-0 flex items-center space-x-2">
         <Dices size={32} strokeWidth={2.5} className="text-black" />
@@ -31,7 +31,28 @@ export default function Navbar({ user }: NavbarProps) {
         </span>
       </div>
 
-      <div className="shrink-0 flex items-center space-x-6">
+      <div className="shrink-0 flex items-center space-x-3 md:space-x-5">
+        {/* User Profile */}
+        {pathname === "/home" && user && (
+          <div className="shrink-0 flex items-center space-x-2">
+            {/* Name */}
+            <p className="font-sans text-[22px] hidden md:block font-bold dark:text-black">
+              Hello, {user.firstName}!
+            </p>
+
+            {/* Image */}
+            <Avatar>
+              <AvatarImage
+                src={user.profileImage}
+                alt={user.firstName + user.lastName}
+              />
+              <AvatarFallback>
+                {user.firstName[0] + user.lastName[0]}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        )}
+
         {/* Theme toggle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -53,19 +74,6 @@ export default function Navbar({ user }: NavbarProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* User image */}
-        {pathname === '/home' && user && (
-          <Avatar>
-            <AvatarImage
-              src={user.profileImage}
-              alt={user.firstName + user.lastName}
-            />
-            <AvatarFallback>
-              {user.firstName[0] + user.lastName[0]}
-            </AvatarFallback>
-          </Avatar>
-        )}
       </div>
     </nav>
   );
